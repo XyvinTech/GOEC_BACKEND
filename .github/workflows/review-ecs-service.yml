@@ -5,7 +5,7 @@ on:
     paths:
       - "review-service/**" # Trigger when logs-service code is pushed
     branches:
-      - staging
+      - main
 
 jobs:
   build-and-deploy:

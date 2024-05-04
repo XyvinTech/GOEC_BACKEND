@@ -14,7 +14,7 @@
     "morgan": "^1.10.0",
     "nodemon": "^3.0.1",
     "qrcode": "^1.5.3",
-    "serverless-http": "^3.2.0",
+  
     "winston": "^3.11.0",
     "winston-mongodb": "^5.1.1"
   },
