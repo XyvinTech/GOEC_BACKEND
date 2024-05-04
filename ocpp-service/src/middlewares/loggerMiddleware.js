@@ -17,7 +17,8 @@ let options = {
   },
   collection: "errorLogs",
   capped: false,
-  expireAfterSeconds: 2592000,
+  size: 10000000,
+  expireAfterSeconds: 864000,
   leaveConnectionOpen: false,
   storeHost: false,
   label:`${CATEGORY}`

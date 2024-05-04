@@ -10,9 +10,13 @@ const logSchema = new mongoose.Schema({
   label: {
     type: String,
   },
-  timestamps: { type: Date },
+  timestamps: {
+    type: Date,
+    default: Date.now, 
+    index: { expires: '5d' } 
+  },
 })
 
-const Log = mongoose.model('Log', logSchema)
+const Log = mongoose.model('errorLog', logSchema)
 
 module.exports = Log

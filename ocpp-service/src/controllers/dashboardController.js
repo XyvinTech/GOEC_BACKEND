@@ -8,7 +8,7 @@ const ObjectId = mongoose.Types.ObjectId;
 
 exports.getOCPPTransaction = async (req, res) => {
 
-    const locations = req.role.location_access.map(id => new ObjectId(id));
+    const locations =req.role.location_access ? req.role.location_access.map(id => new ObjectId(id)):[];
 
     const { startDate, endDate, cpid, pageNo, searchQuery } = req.query;
     const matchStage = {

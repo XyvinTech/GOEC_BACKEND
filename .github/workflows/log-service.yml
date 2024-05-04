@@ -3,7 +3,7 @@ name: Deploy logs-service Lambda
 on:
   push:
     paths:
-      - "logs-service/**" # Trigger when logs-service code is pushed
+      - "**logs-service/**" # Trigger when logs-service code is pushed
     branches:
       - main
 
