@@ -1,0 +1,39 @@
+{
+  "dependencies": {
+    "aws-sdk": "^2.1555.0",
+    "axios": "^1.6.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "http-errors": "^2.0.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "mongoose": "^8.0.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.7",
+    "nodemon": "^3.0.1",
+    "query-string": "^8.1.0",
+    "serverless-http": "^3.2.0",
+    "twilio": "^5.0.3",
+    "winston": "^3.11.0",
+    "winston-mongodb": "^5.1.1"
+  },
+  "name": "notification-service",
+  "version": "1.0.0",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon handler.js",
+    "dev": "nodemon handler.js"
+  },
+  "author": "Ashin Amanulla",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "prettier": "^3.0.3"
+  }
+}

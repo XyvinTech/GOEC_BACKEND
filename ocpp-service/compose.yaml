@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  server:
+    build:
+      context: .
+    environment:
+      EV_MACHINE_SERVICE_URL: "https://jxjg8rm0g8.execute-api.ap-south-1.amazonaws.com"
+      USER_SERVICE_URL: "https://03fkw1yh6h.execute-api.ap-south-1.amazonaws.com"
+      MONGO_URI: "mongodb+srv://userone:userone@serverlessinstance0.8pwddqq.mongodb.net"
+      DB_NAME : "OXIUM_DB"
+      CORS_ORIGIN : '*'
+
+    ports:
+      - 5500:5500
+      - 6500:6500 
+      - 7535:7535
+     

@@ -1,0 +1,17 @@
+
+services:
+  server:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      PORT:  5688
+      MONGO_URI:  "mongodb+srv://userone:userone@serverlessinstance0.8pwddqq.mongodb.net"
+      RFID_SERVICE_URL: 
+      DB_NAME :  "OXIUM_DB"
+      CORS_ORIGIN :  '*'
+      MINIMUM_WALLET_REQUIREMENT :  200
+    ports:
+      - 5688:5688
+
+
