@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "aws-sdk": "^2.1614.0",
     "axios": "^1.6.5",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

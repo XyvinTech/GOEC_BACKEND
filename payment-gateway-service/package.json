@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "aws-sdk": "^2.1614.0",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -13,7 +14,6 @@
     "morgan": "^1.10.0",
     "nodemon": "^3.0.1",
     "razorpay": "^2.9.2",
-   
     "winston": "^3.11.0",
     "winston-mongodb": "^5.1.1"
   },
