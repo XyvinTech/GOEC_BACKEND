@@ -56,12 +56,11 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID}}
-          INSTANCE: ${{ secrets.OCPP_EC2_INSTANCE_1}}
           SSH_KEY: ${{ secrets.OCPP_NEW_PEM }}
+          EC2_INSTANCE_IP:  ${{ secrets.OCPP_EC2_INSTANCE_1}}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: vehicle-microservice
           IMAGE_TAG: latest
-          EC2_INSTANCE_IP: ${{env.INSTANCE }}.${{ env.AWS_REGION }}.compute.amazonaws.com
           USERNAME: ubuntu
           CONTAINER_NAME: vehicle-container
 
