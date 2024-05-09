@@ -60,6 +60,7 @@ jobs:
           EC2_INSTANCE_IP:  ${{ secrets.OCPP_EC2_INSTANCE_1}}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: vehicle-microservice
+          AWS_LOGS_GROUP: OxiumVehicleServiceLogs
           IMAGE_TAG: latest
           USERNAME: ubuntu
           CONTAINER_NAME: vehicle-container
@@ -87,7 +88,7 @@ jobs:
               --name ${{ env.CONTAINER_NAME }} \
               --log-driver=awslogs \
               --log-opt awslogs-region=${{ env.AWS_REGION }} \
-              --log-opt awslogs-group=OxiumVehicleServiceLogs \
+              --log-opt awslogs-group=${{ env.AWS_LOGS_GROUP }} \
               -e ENVIRONMENT=production \
                ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
