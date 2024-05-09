@@ -5,7 +5,7 @@ on:
     paths:
       - "configuration-service/**" 
     branches:
-      - main
+      - staging
 
 jobs:
   build-and-deploy:
@@ -20,8 +20,11 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID}}
       ECR_REPOSITORY: configuration-microservice
       IMAGE_TAG: latest
+      CONTAINER_NAME: configuration-container
+      SERVICE_NAME: configuration-service
 
     steps:
       - name: Checkout repository
@@ -40,34 +43,46 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: configuration-microservice
           IMAGE_TAG: latest
-        run: |
-  
-          cd configuration-service && docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          SERVICE_NAME: configuration-service
+
+         run: |
+      
+          cd ${{env.SERVICE_NAME}} && docker build -t ${{env.ECR_REGISTRY}}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
+          docker push ${{env.ECR_REGISTRY}}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
       - name: Deploy to EC2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID}}
+          SSH_KEY: ${{ secrets.OCPP_NEW_PEM }}
+          EC2_INSTANCE_IP:  ${{ secrets.OCPP_EC2_INSTANCE_1}}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: configuration-microservice
           IMAGE_TAG: latest
-          EC2_INSTANCE_IP: ec2-43-204-194-122.ap-south-1.compute.amazonaws.com
+          USERNAME: ubuntu
+          CONTAINER_NAME: configuration-container
+          PORT: 5101
 
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_INSTANCE_IP }}
-          username: ubuntu
-          key: ${{ secrets.OCPP_NEW_PEM }}
-          # port: 22
+          username: ${{ env.USERNAME }}
+          key: ${{ env.SSH_KEY}}
+
           script: |
+
             # Refresh ECR login
-            aws ecr get-login-password --region ap-south-1 | sudo docker login --username AWS --password-stdin 311015477716.dkr.ecr.ap-south-1.amazonaws.com
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+           
             # Pull Docker Image
-            sudo docker pull 311015477716.dkr.ecr.ap-south-1.amazonaws.com/configuration-microservice:latest
+            sudo docker pull ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-            sudo docker stop configuration-container || true
-            sudo docker rm configuration-container ||
+            sudo docker stop ${{ env.CONTAINER_NAME }} || true
+            sudo docker rm ${{ env.CONTAINER_NAME }} || true
 
-            sudo docker run -d -p 5101:5101 --name configuration-container 311015477716.dkr.ecr.ap-south-1.amazonaws.com/configuration-microservice:latest
+            sudo docker run -d -p ${{ env.PORT }}:${{ env.PORT }} --name ${{ env.CONTAINER_NAME }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+
+            # Clean up old Docker images
+            sudo docker system prune -af
