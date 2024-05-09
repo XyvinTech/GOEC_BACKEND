@@ -10,7 +10,7 @@ const {  mobileWebSocketServer } = require('./wsInit/appWs'); //!DONOT DELETE
 const createError = require('http-errors');
 const PORT = process.env.PORT || 6500;
 const app = express();
-const app2 = new express();
+const app2 = new express(); //ws
 
 require('dotenv').config()
 const connectDB = require('./db');
@@ -22,6 +22,12 @@ app.use(cors({
   origin: '*',
   credentials: true
 }));
+
+app2.use(cors({
+  origin: '*',
+  credentials: true
+}));
+
 
 
 
