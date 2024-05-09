@@ -1,11 +1,11 @@
-name: Deploy transaction Fargate
+name: Deploy transaction-service to oxium-server-1
 
 on:
   push:
     paths:
-      - "transaction-service/**" # Trigger when logs-service code is pushed
+      - "transaction-service/**" 
     branches:
-      - main
+      - staging
 
 jobs:
   build-and-deploy:
@@ -15,45 +15,74 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x]
-        
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
-      ECS_CLUSTER: OcppFargate
-      ECS_SERVICE: transaction-service
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID}}
       ECR_REPOSITORY: transaction-microservice
       IMAGE_TAG: latest
+      CONTAINER_NAME: transaction-container
+      SERVICE_NAME: transaction-service
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-  
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-  
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-  
+
       - name: Build and Push Docker image
-        id:  build-and-push-image
+        id: build-and-push-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: transaction-microservice
           IMAGE_TAG: latest
+          SERVICE_NAME: transaction-service
+
         run: |
-            echo "ECR_REGISTRY: $ECR_REGISTRY"
-            echo "ECR_REPOSITORY: $ECR_REPOSITORY"
-            echo "IMAGE_TAG: $IMAGE_TAG"
-            cd transaction-service && docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
       
-      - name: Deploy to ECS
-        run: |
-              aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE  --force-new-deployment
+          cd ${{env.SERVICE_NAME}} && docker build -t ${{env.ECR_REGISTRY}}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
+          docker push ${{env.ECR_REGISTRY}}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
+      - name: Deploy to EC2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID}}
+          SSH_KEY: ${{ secrets.OCPP_NEW_PEM }}
+          EC2_INSTANCE_IP:  ${{ secrets.OCPP_EC2_INSTANCE_1}}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: transaction-microservice
+          IMAGE_TAG: latest
+          USERNAME: ubuntu
+          CONTAINER_NAME: transaction-container
+          PORT: 5687
 
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_INSTANCE_IP }}
+          username: ${{ env.USERNAME }}
+          key: ${{ env.SSH_KEY}}
+
+          script: |
+
+            # Refresh ECR login
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+           
+            # Pull Docker Image
+            sudo docker pull ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+
+            sudo docker stop ${{ env.CONTAINER_NAME }} || true
+            sudo docker rm ${{ env.CONTAINER_NAME }} || true
+
+            sudo docker run -d -p ${{ env.PORT }}:${{ env.PORT }} --name ${{ env.CONTAINER_NAME }} -e ENVIRONMENT=production ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+
+            # Clean up old Docker images
+            sudo docker system prune -f

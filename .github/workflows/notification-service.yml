@@ -1,9 +1,9 @@
-name: Deploy vehicle-service to oxium-server-1
+name: Deploy notification-service to oxium-server-1
 
 on:
   push:
     paths:
-      - "vehicle-service/**" 
+      - "notification-service/**" 
     branches:
       - staging
 
@@ -21,10 +21,10 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID}}
-      ECR_REPOSITORY: vehicle-microservice
+      ECR_REPOSITORY: notification-microservice
       IMAGE_TAG: latest
-      CONTAINER_NAME: vehicle-container
-      SERVICE_NAME: vehicle-service
+      CONTAINER_NAME: notification-container
+      SERVICE_NAME: notification-service
 
     steps:
       - name: Checkout repository
@@ -41,9 +41,9 @@ jobs:
         id: build-and-push-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: vehicle-microservice
+          ECR_REPOSITORY: notification-microservice
           IMAGE_TAG: latest
-          SERVICE_NAME: vehicle-service
+          SERVICE_NAME: notification-service
 
         run: |
       
@@ -59,11 +59,11 @@ jobs:
           SSH_KEY: ${{ secrets.OCPP_NEW_PEM }}
           EC2_INSTANCE_IP:  ${{ secrets.OCPP_EC2_INSTANCE_1}}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: vehicle-microservice
+          ECR_REPOSITORY: notification-microservice
           IMAGE_TAG: latest
           USERNAME: ubuntu
-          CONTAINER_NAME: vehicle-container
-          PORT: 5689
+          CONTAINER_NAME: notification-container
+          PORT: 5682
 
         uses: appleboy/ssh-action@master
         with:
