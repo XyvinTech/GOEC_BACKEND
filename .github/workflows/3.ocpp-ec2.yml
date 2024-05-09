@@ -77,3 +77,5 @@ jobs:
                 sudo docker rm ocpp-container || true
 
                 sudo docker run -d -p 6500:6500 -p 5500:5500 -p 7535:7535 --name ocpp-container -p 80:80 311015477716.dkr.ecr.ap-south-1.amazonaws.com/ocpp-repository:test
+
+                

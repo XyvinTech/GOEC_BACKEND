@@ -75,5 +75,5 @@ app.listen(PORT, () => {
 app2.listen(5500, () => {
   console.log(`Express app listening on port 5500 ws`);
 });
-// Export the Express app for use in other files
+// Export the Express app for use in other filess
 module.exports = app;
