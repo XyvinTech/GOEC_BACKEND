@@ -45,7 +45,7 @@ jobs:
           IMAGE_TAG: latest
           SERVICE_NAME: configuration-service
 
-         run: |
+        run: |
       
           cd ${{env.SERVICE_NAME}} && docker build -t ${{env.ECR_REGISTRY}}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
           docker push ${{env.ECR_REGISTRY}}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
@@ -63,7 +63,7 @@ jobs:
           IMAGE_TAG: latest
           USERNAME: ubuntu
           CONTAINER_NAME: configuration-container
-          PORT: 5101
+          PORT: 5689
 
         uses: appleboy/ssh-action@master
         with:
