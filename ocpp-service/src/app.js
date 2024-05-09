@@ -30,7 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
 //! DONOT DELETEs
-app.get('/api/health-check',((req, res) =>{
+app2.get('/api/health-check',((req, res) =>{
   res.status(200).send('connected to ocppws!!')
 }))
 
