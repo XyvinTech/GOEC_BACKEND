@@ -10,7 +10,6 @@ const {  mobileWebSocketServer } = require('./wsInit/appWs'); //!DONOT DELETE
 const createError = require('http-errors');
 const PORT = process.env.PORT || 6500;
 const app = express();
-const app2 = new express(); //ws
 
 require('dotenv').config()
 const connectDB = require('./db');
@@ -23,12 +22,6 @@ app.use(cors({
   credentials: true
 }));
 
-app2.use(cors({
-  origin: '*',
-  credentials: true
-}));
-
-
 
 
 const connectionInstance =  connectDB()
@@ -36,7 +29,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
 //! DONOT DELETEs
-app2.get('/api/health-check',((req, res) =>{
+app.get('/api/health-check',((req, res) =>{
   res.status(200).send('connected to ocppws!!')
 }))
 
@@ -71,9 +64,5 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`Express app listening on port ${PORT}`);
 });
-
-app2.listen(5500, () => {
-  console.log(`Express app listening on port 5500 ws`);
-});
-// Export the Express app for use in other filess
+// Export the Express app for use in other files
 module.exports = app;
