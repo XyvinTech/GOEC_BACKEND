@@ -63,7 +63,7 @@ jobs:
           IMAGE_TAG: latest
           USERNAME: ubuntu
           CONTAINER_NAME: configuration-container
-          PORT: 5689
+          PORT: 5101
 
         uses: appleboy/ssh-action@master
         with:
