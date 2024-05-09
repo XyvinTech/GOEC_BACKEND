@@ -82,6 +82,13 @@ jobs:
             sudo docker stop ${{ env.CONTAINER_NAME }} || true
             sudo docker rm ${{ env.CONTAINER_NAME }} || true
 
-            sudo docker run -d -p ${{ env.PORT }}:${{ env.PORT }} --name ${{ env.CONTAINER_NAME }} -e ENVIRONMENT=production ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            sudo docker run -d \
+              -p ${{ env.PORT }}:${{ env.PORT }}\
+              --name ${{ env.CONTAINER_NAME }} \
+              --log-driver=awslogs \
+              --log-opt awslogs-region=${{ env.AWS_REGION }} \
+              --log-opt awslogs-group=OxiumVehicleServiceLogs \
+              -e ENVIRONMENT=production \
+               ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
             
