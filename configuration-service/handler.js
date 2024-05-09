@@ -1,6 +1,6 @@
-const loadSecrets = require('./src/config/env.config.js')
 require('dotenv').config()
-//test
+const loadSecrets = require('./src/config/env.config.js')
+//test3
 if (process.env.ENVIRONMENT === 'production') {
   loadSecrets()
     .then(() => {
