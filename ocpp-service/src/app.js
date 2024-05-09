@@ -10,6 +10,7 @@ const {  mobileWebSocketServer } = require('./wsInit/appWs'); //!DONOT DELETE
 const createError = require('http-errors');
 const PORT = process.env.PORT || 6500;
 const app = express();
+const app2 = new express();
 
 require('dotenv').config()
 const connectDB = require('./db');
@@ -63,6 +64,10 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Express app listening on port ${PORT}`);
+});
+
+app2.listen(5500, () => {
+  console.log(`Express app listening on port 5500 ws`);
 });
 // Export the Express app for use in other files
 module.exports = app;

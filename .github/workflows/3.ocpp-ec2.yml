@@ -5,7 +5,7 @@ on:
     paths:
       - "ocpp-service/**" # Trigger when logs-service code is pushed
     branches:
-      - main
+      - staging
 
 jobs:
   build-and-deploy:
