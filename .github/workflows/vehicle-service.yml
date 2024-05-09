@@ -5,7 +5,7 @@ on:
     paths:
       - "vehicle-service/**" 
     branches:
-      - main
+      - staging
 
 jobs:
   build-and-deploy:
