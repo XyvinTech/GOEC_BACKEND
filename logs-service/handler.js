@@ -1,7 +1,7 @@
 const loadSecrets = require('./src/config/env.config.js')
 require('dotenv').config()
-//test
-if (process.env.ENVIRONMENT === 'production') {
+//test2
+if (process.env.ENVIRONMENT !== 'production') {
   loadSecrets()
     .then(() => {
       const app = require('./src/app.js')
@@ -26,13 +26,13 @@ if (process.env.ENVIRONMENT === 'production') {
 } else {
   const app = require('./src/app.js')
   const connectDB = require('./src/db')
-  const PORT = process.env.LOG_PORT || 5682
+  const PORT = process.env.LOG_PORT || 5570
 
   // Connect to MongoDB
   connectDB()
     .then(() => {
       app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`)
+        console.log(`Server is running locally on port ${PORT}`)
       })
     })
     .catch((err) => {
