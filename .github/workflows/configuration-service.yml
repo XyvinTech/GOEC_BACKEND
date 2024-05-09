@@ -1,0 +1,73 @@
+name: Deploy configuration-service to oxium-server-1
+
+on:
+  push:
+    paths:
+      - "configuration-service/**" 
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPOSITORY: configuration-microservice
+      IMAGE_TAG: latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Docker image
+        id: build-and-push-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: configuration-microservice
+          IMAGE_TAG: latest
+        run: |
+  
+          cd configuration-service && docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to EC2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: configuration-microservice
+          IMAGE_TAG: latest
+          EC2_INSTANCE_IP: ec2-43-204-194-122.ap-south-1.compute.amazonaws.com
+
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.OCPP_NEW_PEM }}
+          # port: 22
+          script: |
+            # Refresh ECR login
+            aws ecr get-login-password --region ap-south-1 | sudo docker login --username AWS --password-stdin 311015477716.dkr.ecr.ap-south-1.amazonaws.com
+            # Pull Docker Image
+            sudo docker pull 311015477716.dkr.ecr.ap-south-1.amazonaws.com/configuration-microservice:latest
+
+            sudo docker stop configuration-container || true
+            sudo docker rm configuration-container ||
+
+            sudo docker run -d -p 5101:5101 --name configuration-container 311015477716.dkr.ecr.ap-south-1.amazonaws.com/configuration-microservice:latest
