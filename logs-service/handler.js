@@ -26,7 +26,7 @@ if (process.env.ENVIRONMENT === 'production') {
 } else {
   const app = require('./src/app.js')
   const connectDB = require('./src/db')
-  const PORT = process.env.NOTIF_PORT || 5682
+  const PORT = process.env.LOG_PORT || 5682
 
   // Connect to MongoDB
   connectDB()
