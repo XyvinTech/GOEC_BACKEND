@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const mongoUrl = process.env.MONGO_URI  || 'mongodb+srv://userone:userone@serverlessinstance0.8pwddqq.mongodb.net'
+const mongoUrl = process.env.MONGO_URI  || 'mongodb://127.0.0.1:27017'
 const dbName = process.env.DB_NAME || 'OXIUM_DB'
 
 const connectDB = async () => {

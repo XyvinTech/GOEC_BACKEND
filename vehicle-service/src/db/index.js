@@ -5,8 +5,6 @@ const dbName = process.env.DB_NAME || 'OXIUM_DB'
 
 const connectDB = async () => {
   try {
-
-
     
     const connectionInstance = await mongoose.connect(`${mongoUrl}/${dbName}`)
 
