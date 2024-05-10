@@ -18,6 +18,10 @@ app.use(express.json({limit:"20kb"}))
 app.use(express.urlencoded({ extended: true , limit:"20kb" }))
 
 //main API
+//! DONOT DELETE
+app.get('/api/health-check',((req, res) =>{
+  res.status(200).send('connected to log-service api!!')
+}))
 
 app.use('/api/v1', authVerify, logRoute)
 
@@ -26,7 +30,7 @@ app.use('/api/v1', authVerify, logRoute)
 app.all('*', (req, res, next) => {
     const err = new createError(
       404,
-      `Cant find the ${req.originalUrl} on the user service server !`
+      `Cant find the ${req.originalUrl} on the log service server !`
     )
     next(err)
   })
