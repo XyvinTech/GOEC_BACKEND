@@ -13,6 +13,6 @@ const logSchema = new mongoose.Schema({
   timestamps: { type: Date },
 })
 
-const Log = mongoose.model('Log', logSchema)
+const Log = mongoose.model('Log', logSchema, 'errorLogs');
 
 module.exports = Log

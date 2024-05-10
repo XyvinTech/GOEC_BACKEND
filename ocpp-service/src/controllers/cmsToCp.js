@@ -17,7 +17,7 @@ async function sendMessageToClient(evID, messageType, payLoad) {
 
     if (response.status === 'Accepted') {
         console.log(`${ocppCommand} worked!`, response);
-        return true
+        return response
     } else {
         console.log(`${ocppCommand} rejected.`);
         throw new Error(`${ocppCommand} rejected.`);
