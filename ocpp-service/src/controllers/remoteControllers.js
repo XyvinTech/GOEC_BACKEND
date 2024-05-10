@@ -98,8 +98,8 @@ exports.changeAvailability = async (req, res, next) => {
     payload.connectorId = Number(payload.connectorId)
 
     try {
-        await sendMessageToClient(evID, messageType, payload)
-        res.status(200).json({ success: true, message: `${messageType} command set` })
+        const response = await sendMessageToClient(evID, messageType, payload)
+        res.status(200).json({ success: true, message: `${messageType} command set`, data: response })
 
     } catch (error) {
         next(error);
@@ -126,8 +126,8 @@ exports.triggerMessage = async (req, res, next) => {
     if (payload.connectorId) payload.connectorId = Number(payload.connectorId)
 
     try {
-        await sendMessageToClient(evID, messageType, payload)
-        res.status(200).json({ success: true, message: `${messageType} command set` })
+        const response = await sendMessageToClient(evID, messageType, payload)
+        res.status(200).json({ success: true, message: `${messageType} command set`, data: response})
 
     } catch (error) {
         next(error);
