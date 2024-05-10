@@ -83,7 +83,7 @@ exports.createEvMachine = async (req, res) => {
   }
 
   evMachineData.connectors = connectors;
-  evMachineData.configuration_url = `ws://65.0.248.79:5500/${evMachineData.CPID}`
+  evMachineData.configuration_url = `wss://oxium.goecworld.com:5500/${evMachineData.CPID}`
   evMachineData.chargingTariff = defaultTariff.data.result._id;
 
 
@@ -300,3 +300,5 @@ exports.getEvByLocation = async (req, res) => {
     res.status(200).json({ status: true, message: "No data found" })
   }
 }
+
+
