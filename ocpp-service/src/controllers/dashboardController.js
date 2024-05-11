@@ -320,6 +320,7 @@ exports.getMachineLogs = async (req, res) => {
             command: log.messageType,
             date: moment(log.timestamp).format("MMM DD YYYY h:mm:ss A"),
             payload: log.payload,
+            source: log.source
         }
     })
     let totalCount = await OCPPLOG.find(filter).countDocuments()

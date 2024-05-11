@@ -1,4 +1,5 @@
 const { getClient } = require('../middlewares/clientsManager');
+const saveLogs = require('../utils/saveLogs');
 
 // Function to send a message to a specific client
 async function sendMessageToClient(evID, messageType, payLoad) {
@@ -13,6 +14,7 @@ async function sendMessageToClient(evID, messageType, payLoad) {
 
     const response = await client.call(ocppCommand, ocppPayload);
 
+    await saveLogs(evID, messageType, response, "CMS");
 
 
     if (response.status === 'Accepted') {
