@@ -175,8 +175,8 @@ exports.getConfiguration = async (req, res, next) => {
     const payload = req.body
 
     try {
-        const res = await sendMessageToClient(evID, messageType, payload)
-        res.status(200).json({ success: true, message: `${messageType} command set`, data: res })
+        const response = await sendMessageToClient(evID, messageType, payload)
+        res.status(200).json({ success: true, message: `${messageType} command set`, data: response })
 
     } catch (error) {
         next(error);
