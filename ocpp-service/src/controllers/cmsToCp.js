@@ -13,6 +13,7 @@ async function sendMessageToClient(evID, messageType, payLoad) {
 
 
     const response = await client.call(ocppCommand, ocppPayload);
+    console.log("🚀 ~ sendMessageToClient ~ response:", response)
 
     await saveLogs(evID, messageType, response, "CMS");
 
