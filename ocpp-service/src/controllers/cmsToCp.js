@@ -4,6 +4,9 @@ const saveLogs = require("../utils/saveLogs");
 // Function to send a message to a specific client
 async function sendMessageToClient(evID, messageType, payLoad) {
   const client = await getClient(evID);
+
+  await saveLogs(evID, messageType, payLoad, "CMS");
+
   if (!client) {
     throw Error("EV Client not found");
   }
@@ -13,7 +16,7 @@ async function sendMessageToClient(evID, messageType, payLoad) {
 
   const response = await client.call(ocppCommand, ocppPayload);
 
-  await saveLogs(evID, messageType, response, "CMS");
+  await saveLogs(evID, messageType, response, "CP");
 
   if (messageType === "GetConfiguration") {
     if (response) {
