@@ -2,12 +2,12 @@ const OCPPLOG = require('../models/ocppLogs')
 
 
 
-async function saveLogs(identity, messageType, params) {
+async function saveLogs(identity, messageType, params, source) {
     try {
   
   
       let log = {
-        source: 'CP',
+        source: source || 'CP',
         CPID: identity,
         messageType: messageType,
         payload: params

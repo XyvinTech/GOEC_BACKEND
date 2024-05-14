@@ -22,6 +22,7 @@ router.post('/ocpp/triggerMessage/:evID', asyncHandler(remoteControllers.trigger
 router.post('/ocpp/updateFirmware/:evID', asyncHandler(remoteControllers.updateFirmware))
 router.post('/ocpp/sendLocalList/:evID', asyncHandler(remoteControllers.sendLocalList))
 router.post('/ocpp/getDiagonostics/:evID', asyncHandler(remoteControllers.getDiagonostics))
+router.get('/ocpp/getConfiguration/:evID', asyncHandler(remoteControllers.getConfiguration))
 
 //!logs
 router.get('/ocpp/logs', asyncHandler(logController.getAllOCPPLogs))

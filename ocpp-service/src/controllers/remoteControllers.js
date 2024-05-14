@@ -169,6 +169,20 @@ exports.getDiagonostics = async (req, res, next) => {
     }
 }
 
+exports.getConfiguration = async (req, res, next) => {
+    const evID = req.params.evID;
+    const messageType = 'GetConfiguration';
+    const payload = req.body
+
+    try {
+        const data = await sendMessageToClient(evID, messageType, payload)
+        res.status(200).json({ success: true, message: `${messageType} command set`, data })
+
+    } catch (error) {
+        next(error);
+    }
+}
+
 exports.sendLocalList = async (req, res, next) => {
     const evID = req.params.evID;
     const messageType = 'SendLocalList';
