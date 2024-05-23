@@ -5,9 +5,14 @@ const EvMachine = require('../models/evMachineSchema')
 const EvModel = require('../models/evModelSchema')
 const QRCode = require('qrcode');
 const generateToken = require('../utils/generateToken');
+const createQRCode = require('../utils/qrCodeGen');
 const token = generateToken(process.env.AUTH_SECRET);
 
 
+
+exports.makeUpdates = async (req, res) => {
+
+}
 
 // Create a new evMachine
 exports.createEvMachine = async (req, res) => {
@@ -27,7 +32,7 @@ exports.createEvMachine = async (req, res) => {
   const defaultTariff = await axios.get(`${configurationServiceUrl}/api/v1/chargingTariff/default`, {
     headers: {
       Authorization: `Bearer ${token}`,
-  }
+    }
   })
 
   const numberOfConnectors = evModel.no_of_ports;
@@ -37,7 +42,7 @@ exports.createEvMachine = async (req, res) => {
   for (let i = 1; i <= numberOfConnectors; i++) {
 
     let qrCodeConnector;
-  
+
 
     let stringData = {
       cpid: evMachineData.CPID,
@@ -46,23 +51,13 @@ exports.createEvMachine = async (req, res) => {
       outputType: evModel.output_type,
       capacity: evModel.capacity,
       connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : "",
-      tariff: defaultTariff.data.result.value.toFixed(2)
-    };
-    const generateQRCode = (data) => {
-      return new Promise((resolve, reject) => {
-        QRCode.toDataURL(JSON.stringify(data), (err, url) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(url);
-          }
-        });
-      });
+      // tariff: defaultTariff.data.result.value.toFixed(2)
     };
 
+
     try {
-      qrCodeConnector = await generateQRCode(stringData);
-   
+      qrCodeConnector = await createQRCode(stringData);
+
     } catch (err) {
       console.error(err);
     }
@@ -127,7 +122,7 @@ exports.getEvMachineTariffRate = async (req, res) => {
   let apiResponse = await axios.get(`${configurationServiceUrl}/api/v1/chargingTariff/${chargingTariff}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-  }
+    }
   })
   res.status(200).send({ status: true, result: apiResponse.data.result })
 }
@@ -293,12 +288,57 @@ exports.deleteEvMachineByStationId = async (req, res) => {
 
 exports.getEvByLocation = async (req, res) => {
   const locationIds = req.body.locations;
-  const getCPID = await EvMachine.find({location_name:{$in: locationIds}}).select("CPID");
-  if(getCPID.length > 0){
+  const getCPID = await EvMachine.find({ location_name: { $in: locationIds } }).select("CPID");
+  if (getCPID.length > 0) {
     res.status(200).json({ status: true, message: "OK", data: getCPID })
-  }else{
+  } else {
     res.status(200).json({ status: true, message: "No data found" })
   }
 }
 
 
+// const updateEvMachineQRCodes = async () => {
+
+//   try {
+//     // Fetch all EV Machines
+//     const evMachines = await EvMachine.find().populate('evModel'); // Ensure to populate necessary references
+
+//     for (const evMachine of evMachines) {
+//       const { CPID, connectors, evModel } = evMachine;
+
+//       for (let i = 0; i < connectors.length; i++) {
+//         let connector = connectors[i];
+
+//         let payload = {
+//           cpid: CPID,
+//           connectorId: connector.connectorId,
+//           chargerName: CPID,
+//           outputType: evModel.output_type,
+//           capacity: evModel.capacity,
+//           connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : "",
+//           // tariff: defaultTariff.data.result.value.toFixed(2) // Uncomment if tariff is needed
+//         };
+
+//         try {
+//           // Generate QR code for each connector
+//           let qrCodeConnector = await createQRCode(payload);
+
+//           // Update the QR code in the database
+//           connector.qrCode = qrCodeConnector;
+//         } catch (err) {
+//           console.error('Error generating QR code for connector:', connector.connectorId, err);
+//         }
+//       }
+
+//       // Save the updated evMachine document
+//       await evMachine.save();
+//     }
+
+//     console.log('All QR codes updated successfully.');
+//   } catch (err) {
+//     console.error('Failed to update QR codes:', err);
+//   }
+
+// }
+
+// updateEvMachineQRCodes()
