@@ -5,7 +5,7 @@ on:
     paths:
       - "user-service/**" # Trigger when logs-service code is pushed
     branches:
-      - main
+      - staging
 
 jobs:
   build-and-deploy:

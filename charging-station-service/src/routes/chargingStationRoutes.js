@@ -30,7 +30,7 @@ router
   .get('/chargingStations/dashboard/:chargingStationId', asyncHandler(dashboardController.getChargingStationByIdForDashboard))
 .get('/chargingStations/dashboard/evMachineList/:chargingStationId', asyncHandler(dashboardController.getCPIDListByChargingStationForDashboard))
 
-  // Image Upload 
+  // Image Uploads
   .post('/image/upload',upload.single('image'), asyncHandler(dashboardController.imageUpload))
 
 
