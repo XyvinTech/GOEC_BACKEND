@@ -57,9 +57,9 @@ exports.getChargingStationById = async (req, res) => {
     userApiResponse = await axios.get(`${userServiceUrl}/api/v1/users/user/byMobileNo/${userMobileNo}`, {
       headers: {
         Authorization: `Bearer ${token}`,
-    }
+      }
     })
-    userFavoriteStations = userApiResponse.data.result.favoriteStations 
+    userFavoriteStations = userApiResponse.data.result.favoriteStations
 
 
     chargingStation = await ChargingStation.findById(chargingStationId)
@@ -231,10 +231,10 @@ exports.getChargingStationById = async (req, res) => {
       const connectorTypes = charger.evModelDetails ?
         charger.evModelDetails[0].connectors.map(connector => ({
           ...connector,
-          connectorType: connector.type || 'Unknown' 
+          connectorType: connector.type || 'Unknown'
         })) : [];
 
-        const connectorStatus = await fetchConnectorsWithSoC(charger.connectors,charger);
+      const connectorStatus = await fetchConnectorsWithSoC(charger.connectors, charger);
 
       const combinedConnectors = connectorTypes.map(connectorType => {
         const statusMatch = connectorStatus.find(status => status.connectorId === connectorType.connectorId);
@@ -297,7 +297,7 @@ exports.getChargingStationById = async (req, res) => {
 
 
 //!testing
-const fetchConnectorsWithSoC = async (connectors,charger) => {
+const fetchConnectorsWithSoC = async (connectors, charger) => {
   if (!connectors) return [];
   return await Promise.all(connectors.map(async (connector) => {
     let SOC = await getSoC(charger.name, connector.connectorId);
@@ -348,7 +348,7 @@ exports.getFavoriteChargingStationList = async (req, res) => {
   let apiResponse = await axios.get(`${userServiceUrl}/api/v1/users/user/byMobileNo/${userMobileNo}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-  }
+    }
   })
 
   const userFavoriteStations = apiResponse.data.result.favoriteStations
@@ -414,7 +414,7 @@ exports.getChargingStationUpdatedList = async (req, res) => {
         as: "evMachines",
       },
     },
-  
+
     {
       $group: {
         _id: "$_id",
@@ -431,28 +431,28 @@ exports.getChargingStationUpdatedList = async (req, res) => {
     },
     {
       $sort: {
-        distance: 1 
+        distance: 1
       }
     }
 
   ])
 
-  
+
 
   const result = await Promise.all(chargingStationList.map(async (station) => {
 
 
     let connectorsArray = station.connectors[0]
-const flatArray = connectorsArray.reduce((acc, curr) => acc.concat(curr), []);
+    const flatArray = connectorsArray.reduce((acc, curr) => acc.concat(curr), []);
 
-//to check availability
+    //to check availability
     const hasAvailableConnector = flatArray.some(connector => connector.status === 'Available');
     const hasUnavailableConnector = flatArray.every(connector => connector.status === 'Unavailable');
     const validConnectorStatus = ['Preparing', 'Charging', 'Finishing'];
     const hasBusyConnector = flatArray.every(connector => validConnectorStatus.includes(connector.status));
 
-//for connectors
-let flattenedBeforeConnectorsType = station.connectorsType[0]
+    //for connectors
+    let flattenedBeforeConnectorsType = station.connectorsType[0]
     const uniqueArrays = [];
     const flattenedConnectorsType = flattenedBeforeConnectorsType.reduce((acc, types) => {
       const isDuplicate = uniqueArrays.some(array => JSON.stringify(array) === JSON.stringify(types));
@@ -473,7 +473,7 @@ let flattenedBeforeConnectorsType = station.connectorsType[0]
       return acc;
     }, []);
 
-const onlyOne = [...new Set(flattenedConnectorsType2)];
+    const onlyOne = [...new Set(flattenedConnectorsType2)];
 
     const charger_status = hasAvailableConnector
       ? 'Online'
@@ -482,7 +482,7 @@ const onlyOne = [...new Set(flattenedConnectorsType2)];
         : 'Busy'
 
     const evModelDetails = station.chargingStation.evMachines[0]?.evModelDetails[0];
-  
+
     let station1 = station.chargingStation
 
     return {
@@ -547,14 +547,7 @@ exports.updateChargingStation = async (req, res) => {
 // Delete a chargingStation by ID
 exports.deleteChargingStation = async (req, res) => {
   const isExist = await ChargingStation.findById(req.params.chargingStationId)
-
-  // @ts-ignore
-
-
-    await deleteChargers(req.params.chargingStationId);
-
-
-
+  await deleteChargers(req.params.chargingStationId);
   const deletedChargingStation = await ChargingStation.findByIdAndDelete(req.params.chargingStationId)
   // const deletedChargingStation = true;
   if (!deletedChargingStation) {
@@ -565,3 +558,34 @@ exports.deleteChargingStation = async (req, res) => {
 }
 
 
+
+exports.inbetweenPointsList = async (req, res) => {
+
+  const { coordinates } = req.body;
+
+  if (!coordinates || !Array.isArray(coordinates) || coordinates.length === 0) {
+    throw new Error(400, "Invalid or missing coordinates");
+  }
+
+  const convertedCoords = coordinates.map(coord => [coord[1], coord[0]]);
+  if (convertedCoords[0][0] !== convertedCoords[convertedCoords.length - 1][0] ||
+    convertedCoords[0][1] !== convertedCoords[convertedCoords.length - 1][1]) {
+    convertedCoords.push(convertedCoords[0]); // Close the polygon
+  }
+
+  const routePath = {
+    $geometry: {
+      type: "Polygon",
+      coordinates: [convertedCoords]
+    }
+  };
+
+  const stations = await ChargingStation.find({
+    location: {
+      $geoWithin: routePath
+    }
+  });
+
+  res.status(200).json({ success: true, count: stations.length, data: stations });
+
+}

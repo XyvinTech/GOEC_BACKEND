@@ -33,4 +33,7 @@ router
   // Image Upload 
   .post('/image/upload',upload.single('image'), asyncHandler(dashboardController.imageUpload))
 
+
+
+  router.post('/chargingStations/inbetween-points/list', asyncHandler(chargingStationController.inbetweenPointsList))
 module.exports = router
