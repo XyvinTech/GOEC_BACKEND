@@ -13,7 +13,7 @@ exports.getLogs = async (req, res) => {
   const totalCount = await LOGS.find(filter).countDocuments();
   const logData = await LOGS.find(filter)
     .skip(10 * (pageNo - 1))
-    .limit(10)
+    .limit(10).sort({ timestamp: -1 })
   if (!logData) {
     res.status(404).json({ error: 'Log not found' })
   } else {

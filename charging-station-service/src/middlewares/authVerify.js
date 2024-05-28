@@ -16,6 +16,7 @@ const authVerify = (req, res, next) => {
     }
     console.log("Auth success...!");
     req.role = decoded.role;
+    req.userId = decoded.userId;
     return next();
   })
 }

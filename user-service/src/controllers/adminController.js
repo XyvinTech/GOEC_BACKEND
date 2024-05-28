@@ -636,6 +636,46 @@ exports.updateRole = async (req, res) => {
 
 }
 
+exports.pushRole = async (req, res) => {
+  const { id } = req.params;
+  const { location_access } = req.body;
+
+  try {
+    const updatedRole = await Role.findByIdAndUpdate(
+      id,
+      {
+        $push: { location_access: location_access }
+      },
+      { new: true }
+    );
+
+    res.status(200).json({ success: true, data: updatedRole });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.popRole = async (req, res) => {
+  const { id } = req.params;
+  const { location_access } = req.body;
+
+  try {
+    const updatedRole = await Role.findByIdAndUpdate(
+      id,
+      {
+        $pull: { location_access: location_access }
+      },
+      { new: true }
+    );
+
+    res.status(200).json({ success: true, data: updatedRole });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
 exports.createAdmin = async (req, res) => {
 
   const { name, designation, email, mobile, role, status } = req.body;

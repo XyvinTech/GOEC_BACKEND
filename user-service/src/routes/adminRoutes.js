@@ -11,6 +11,8 @@ router.post('/admin-signin', asyncHandler(adminController.adminSignIn))
 router.post('/role/create', authVerify, asyncHandler(adminController.createRole))
 router.get('/role/list', authVerify, asyncHandler(adminController.getRole))
 router.put('/role/:id', authVerify, asyncHandler(adminController.updateRole))
+router.put('/pushrole/:id', authVerify, asyncHandler(adminController.pushRole))
+router.put('/poprole/:id', authVerify, asyncHandler(adminController.popRole))
 router.delete('/role/:id', authVerify, asyncHandler(adminController.deleteRole))
 router.get('/role/:id', authVerify, asyncHandler(adminController.getRoleById))
 

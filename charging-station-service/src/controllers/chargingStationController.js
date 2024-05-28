@@ -15,6 +15,8 @@ const findCommonReturnData = 'name address latitude longitude chargers status ty
 const mongoose = require('mongoose')
 const { getSoC } = require('../services/ocppServiceApis');
 const generateToken = require('../utils/generateToken');
+const { updateRole, removeLoc } = require('../services/userServiceApis');
+const { signAccessToken } = require('../utils/jwt_helper');
 const token = generateToken(process.env.AUTH_SECRET);
 
 // Create a new chargingStations
@@ -32,7 +34,9 @@ exports.createChargingStation = async (req, res) => {
   });
 
   const savedChargingStation = await chargingStation.save()
-  res.status(201).json({ status: true, message: 'Ok', result: savedChargingStation })
+  const upRole = await updateRole(req.role._id, savedChargingStation._id);
+  let token = await signAccessToken(req.userId, upRole, req.userId.email)
+  res.status(201).json({ status: true, message: 'Ok', result: savedChargingStation, token: token });
 }
 
 // Get a chargingStation by ID
@@ -553,6 +557,7 @@ exports.deleteChargingStation = async (req, res) => {
   if (!deletedChargingStation) {
     res.status(404).json({ status: false, message: 'Charging Station not found' })
   } else {
+    await removeLoc(req.role._id, req.params.chargingStationId);
     res.status(204).end()
   }
 }
