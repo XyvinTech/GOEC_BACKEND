@@ -18,7 +18,7 @@ exports.adminSignIn = async (req, res) => {
 
   const match = await comparePassword(password, user.password);
   if (!match) return res.status(400).json({ status: false, error: 'Invalid password' })
-
+console.log('--->',user,user.role,email)
   let token = await signAccessToken(user, user.role, email)
   res.status(200).json({ success: true, token: token })
 }

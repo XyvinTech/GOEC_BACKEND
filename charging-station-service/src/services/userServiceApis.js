@@ -2,14 +2,18 @@ const axios = require('axios')
 require('dotenv').config()
 const generateToken = require('../utils/generateToken')
 
-const staticGlobalUrl = 'http://alb-762634556.ap-south-1.elb.amazonaws.com:5688'
+const staticGlobalUrl = 'https://oxium.goecworld.com:5688'
 
 const token = generateToken(process.env.AUTH_SECRET)
 
 exports.updateRole = async (roleId, data) => {
   try {
-    let userServiceUrl = process.env.USER_SERVICE_URL
+    let userServiceUrl = process.env.USER_URL
+
     if (!userServiceUrl) userServiceUrl = staticGlobalUrl
+
+    console.log('user service ',userServiceUrl);
+
     const response = await axios.put(
       `${userServiceUrl}/api/v1/admin/pushrole/${roleId}`,
       {location_access: data},
@@ -28,8 +32,9 @@ exports.updateRole = async (roleId, data) => {
 
 exports.removeLoc = async (roleId, data) => {
   try {
-    let userServiceUrl = process.env.USER_SERVICE_URL
+    let userServiceUrl = process.env.USER_URL
     if (!userServiceUrl) userServiceUrl = staticGlobalUrl
+    console.log(userServiceUrl);
     const response = await axios.put(
       `${userServiceUrl}/api/v1/admin/poprole/${roleId}`,
       {location_access: data},

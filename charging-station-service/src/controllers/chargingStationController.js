@@ -10,7 +10,7 @@ const { getChargerDetails, deleteChargers } = require('../services/evMachineServ
 // @ts-ignore
 const { getChargingTariff } = require('../services/configurationServiceApis')
 const { axiosErrorHandler } = require('../utils/axiosErrorHandler')
-const staticUserGlobalUrl = "http://alb-762634556.ap-south-1.elb.amazonaws.com:5688" //using this in case user service api or evMachine service api is not set in env 
+const staticUserGlobalUrl = "'https://oxium.goecworld.com:5688'" //using this in case user service api or evMachine service api is not set in env 
 const findCommonReturnData = 'name address latitude longitude chargers status type image startTime stopTime amenities owner createdAt'
 const mongoose = require('mongoose')
 const { getSoC } = require('../services/ocppServiceApis');
@@ -35,7 +35,7 @@ exports.createChargingStation = async (req, res) => {
 
   const savedChargingStation = await chargingStation.save()
   const upRole = await updateRole(req.role._id, savedChargingStation._id);
-  let token = await signAccessToken(req.userId, upRole, req.userId.email)
+  let token = await signAccessToken(req.userId, upRole.data, req.userId.email)
   res.status(201).json({ status: true, message: 'Ok', result: savedChargingStation, token: token });
 }
 
