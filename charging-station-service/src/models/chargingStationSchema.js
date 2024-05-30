@@ -35,7 +35,10 @@ const chargingStationSchema = new mongoose.Schema(
     status: String,
     commissioned_on: String,
     type: String, 
-    image: String,
+    image: {
+      type:String,
+      default: "https://image-upload-oxium.s3.ap-south-1.amazonaws.com/charging-station/d98b7359-26ac-4020-b207-9d75cc1179f1-ador%2060.jpg"
+    },
     startTime:String,
     stopTime:String,
     staff:{
