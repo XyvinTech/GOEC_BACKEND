@@ -7,7 +7,7 @@ const ObjectId = mongoose.Types.ObjectId;
 
 exports.getDashboardList = async (req, res) => {
 
-    const locations = req.role.location_access;
+    const locations = req.role.location_access.map(id => new ObjectId(id));
 
     const { pageNo, searchQuery } = req.query;
 
@@ -28,7 +28,9 @@ exports.getDashboardList = async (req, res) => {
         filter['chargingStationDetails._id'] = { $in: locations };
     }
 
-    let pipedData = await EvMachine.aggregate([
+   
+    
+    let pipeLine = [
         { $sort: { updatedAt: -1 } },
 
         {
@@ -83,7 +85,7 @@ exports.getDashboardList = async (req, res) => {
                 as: 'evModelDetails'
             }
         },
-        { $match: filter },
+     
 
         {
             $lookup: {
@@ -137,6 +139,7 @@ exports.getDashboardList = async (req, res) => {
                 preserveNullAndEmptyArrays: true
             }
         },
+        { $match: filter },
         {
             $project: {
                 _id: 1,
@@ -161,13 +164,22 @@ exports.getDashboardList = async (req, res) => {
 
 
 
-    ]).skip(10*(pageNo-1)).limit(10);
+    ]
+
+
+    const pipedData = await EvMachine.aggregate([...pipeLine]).skip(10*(pageNo-1)).limit(10);
+    let countPipeline = [
+        ...pipeLine,
+        { $count: "totalCount" }
+    ];
 
     let result = pipedData
-    let totalCount = await EvMachine.find(filter).countDocuments()
+    let countResult = await EvMachine.aggregate(countPipeline);
+    let totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
 
     res.send({ status: true, message: 'OK', result: result, totalCount })
 }
+
 
 
 exports.getDashboardListById = async (req, res) => {
