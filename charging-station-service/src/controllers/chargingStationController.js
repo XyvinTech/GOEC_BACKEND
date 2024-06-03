@@ -572,22 +572,31 @@ exports.inbetweenPointsList = async (req, res) => {
     throw new Error(400, "Invalid or missing coordinates");
   }
 
+    // Validate all coordinate pairs
+    if (coordinates.some(coord => !Array.isArray(coord) || coord.length !== 2 || coord.some(num => typeof num !== 'number'))) {
+      return res.status(400).json({ error: "Each coordinate must be an array of two numbers." });
+    }
+
   const convertedCoords = coordinates.map(coord => [coord[1], coord[0]]);
+
+   // Ensure the polygon is closed
   if (convertedCoords[0][0] !== convertedCoords[convertedCoords.length - 1][0] ||
     convertedCoords[0][1] !== convertedCoords[convertedCoords.length - 1][1]) {
-    convertedCoords.push(convertedCoords[0]); // Close the polygon
+    convertedCoords.push([...convertedCoords[0]]); // Close the polygon
   }
 
   const routePath = {
-    $geometry: {
-      type: "Polygon",
-      coordinates: [convertedCoords]
-    }
+    type: "Polygon",
+    coordinates: [convertedCoords]
   };
+
+  console.log("GeoJSON Object:", JSON.stringify(routePath));
 
   const stations = await ChargingStation.find({
     location: {
-      $geoWithin: routePath
+      $geoWithin: {
+        $geometry: routePath
+      }
     }
   });
 

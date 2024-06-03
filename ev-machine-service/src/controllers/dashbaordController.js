@@ -7,7 +7,7 @@ const ObjectId = mongoose.Types.ObjectId;
 
 exports.getDashboardList = async (req, res) => {
 
-    const locations = req.role.location_access.map(id => new ObjectId(id));
+    const locations = req.role.location_access;
 
     const { pageNo, searchQuery } = req.query;
 
