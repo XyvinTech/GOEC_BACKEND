@@ -34,7 +34,10 @@ const evMachineSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ChargingStation',
     },
-    name: String,
+    name: {
+      type:String,
+      set: value => value.toUpperCase()
+    },
     authorization_key: String,
     serial_number: String,
     commissioned_date: String,
@@ -48,7 +51,8 @@ const evMachineSchema = new mongoose.Schema(
     CPID: {
       type: String,
       unique: true,
-      required: true
+      required: true,
+      set: value => value.toUpperCase()
     },
 
     chargingTariff: {
