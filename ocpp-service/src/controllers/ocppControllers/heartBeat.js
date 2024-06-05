@@ -14,7 +14,7 @@ async function handleHeartbeat({ identity, params }) {
 
     let messageType = "Available"
     await statusCPID(identity, messageType)
-    await saveLogs(identity, messageType, params)
+    await saveLogs(identity, "Heartbeat", params="{}")
     lastHeartbeatTimestamps.set(identity, timestamp);
 
 
