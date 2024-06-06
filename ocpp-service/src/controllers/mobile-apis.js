@@ -121,7 +121,7 @@ exports.getActiveSession = async (req, res, next) => {
             connectorType: connectorType[0].type || null,
             tariff: pipedData[0].evMachines.chargingTariffDetails[0].charger_tariff,
             chargingStationId: pipedData[0].evMachines.location_name || null,
-
+            currentSoc: ongoingTransaction ? ongoingTransaction.currentSoc : null
         }
 
         res.status(200).json({ success: true, result: result, message: `Ok` })
