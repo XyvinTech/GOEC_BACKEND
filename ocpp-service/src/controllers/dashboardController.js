@@ -318,7 +318,7 @@ exports.getMachineLogs = async (req, res) => {
             uniqueId: log._id,
             connectorId: log.payload?.connectorId,
             command: log.messageType,
-            date: moment(log.createdAt).format("MMM DD YYYY h:mm:ss A"),
+            date: moment(log.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             payload: log.payload,
             source: log.source
         }
@@ -348,7 +348,7 @@ exports.getMachineAlarms = async (req, res) => {
     data = data.map(log => {
         return {
             cpid: log.CPID,
-            date: moment(log.createdAt).format("MMM DD YYYY h:mm:ss A"),
+            date: moment(log.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             summary: log.payload ? log.payload.info : '',
             errorCode: log.payload ? log.payload.errorCode : '',
             connectorId: log.payload ? log.payload.connectorId : '',
