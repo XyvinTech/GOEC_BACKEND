@@ -46,7 +46,9 @@ exports.getAllOCPPLogs = async (req, res, next) => {
     }
 
     if(cpidList){
-        filter.CPID = { $in: cpidList }
+        if(filter.CPID == ""){
+            filter.CPID = { $in: cpidList }
+        }
     }
     
 
