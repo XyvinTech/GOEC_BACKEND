@@ -389,7 +389,7 @@ exports.getAllAlarms = async (req, res) => {
         ];
     }
 
-    let data = await OCPPLOG.find(query).sort({ timestamp: -1 }).skip(10*pageNo-1).limit(10);
+    let data = await OCPPLOG.find(query).sort({ createdAt: -1 }).skip(10*pageNo-1).limit(10);
 
     let totalCount = await OCPPLOG.find(query).countDocuments()
 
@@ -398,7 +398,7 @@ exports.getAllAlarms = async (req, res) => {
 
         return {
             cpid: log.CPID,
-            date: moment(log.timestamp).format("MMM DD YYYY h:mm:ss A"),
+            date: moment(log.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             summary: log.payload ? log.payload.info : '',
             connectorId: log.payload ? log.payload.connectorId : '',
             status: log.payload ? log.payload.status : '',
