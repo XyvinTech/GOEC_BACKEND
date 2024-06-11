@@ -170,6 +170,15 @@ exports.deleteWalletTransaction = async (req, res) => {
 
 exports.dashboardTransactionList = async (req, res) => {
 
+  const maskMobileNumber = (mobile) => {
+    mobile = mobile.toString();
+    const firstPart = mobile.slice(0, 4);
+    const lastPart = mobile.slice(-1);
+    const maskedPart = '*'.repeat(mobile.length - 5);
+    const maskedMobile = `${firstPart}${maskedPart}${lastPart}`;
+    return maskedMobile;
+}
+
   const { pageNo, searchQuery } = req.query;
 
   const filter = {};
@@ -280,6 +289,7 @@ exports.dashboardTransactionList = async (req, res) => {
       currency: item.currency,
       userWalletUpdated: item.userWalletUpdated,
       user: item.user,
+      mobile: maskMobileNumber(item.mobile),
       external_payment_ref: item.external_payment_ref || 'Nil',
       initiated_by: item.initiated_by || 'user',
       invoice_id: item.invoice_id || 'nil',
