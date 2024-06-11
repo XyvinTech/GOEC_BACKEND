@@ -28,6 +28,11 @@ exports.remoteStopTransaction = async (req, res, next) => {
     const evID = req.params.evID;
     const messageType = 'RemoteStopTransaction';
     const payload = { transactionId: Number(req.body.transactionId) }
+
+//TODO: ensure the meterStop of remoteTransaction === latest metervlue .energy then only send response to mobile client
+
+
+
     const mobClient = req.body.transactionId;
 
     try {
