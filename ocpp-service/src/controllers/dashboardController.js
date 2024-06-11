@@ -53,7 +53,7 @@ exports.getOCPPTransaction = async (req, res) => {
                     {
                         $project: {
                             username: 1,
-
+                            defaultVehicle: 1,
                         }
                     }
                 ],
@@ -113,9 +113,13 @@ exports.getOCPPTransaction = async (req, res) => {
                 startTime: 1,
                 endTime: 1,
                 username: { $ifNull: ["$userDetails.username", ""] },
+                vehicleNumber: { $ifNull: ["$userDetails.defaultVehicle", ""] },
                 chargingStation: { $ifNull: ["$chargingStation.name", ""] },
                 meterStart: 1,
+                meterStop: 1,
                 lastMeterValue: 1,
+                startSoc: 1,
+                currentSoc: 1,
                 connectorId: 1,
                 unitConsumed: 1,
                 transactionId: 1,
@@ -124,6 +128,8 @@ exports.getOCPPTransaction = async (req, res) => {
                 totalAmount: 1,
                 closeBy: 1,
                 cpid: 1,
+                startTime: 1,
+                endTime: 1
             }
         }
 
@@ -133,12 +139,20 @@ exports.getOCPPTransaction = async (req, res) => {
 
     let result = pipeline.map(transactionData => {
         return {
+            id: transactionData._id,
             transactionId: transactionData.transactionId,
-            date: moment(transactionData.startTime).format("MMM DD YYYY h:mm:ss A"),
+            date: moment(transactionData.startTime).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             username: transactionData.username,
+            vehicleNum: transactionData.vehicleNumber,
             transactionMode: transactionData.transactionMode,
             chargePointId: transactionData.cpid,
             connectorId: transactionData.connectorId,
+            meterStart: transactionData.meterStart,
+            meterStop: transactionData.meterStop,
+            startSoc: transactionData.startSoc,
+            currentSoc: transactionData.currentSoc,
+            startTime: moment(transactionData.startTime).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
+            endTime: moment(transactionData.endTime).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             closeBy: transactionData.closeBy,
             location: transactionData.chargingStation,
             totalAmount: transactionData.totalAmount.toFixed(2),
@@ -148,12 +162,7 @@ exports.getOCPPTransaction = async (req, res) => {
         }
     })
 
-
-
-
-
     res.status(200).json({ status: true, message: 'OK', result: result, totalCount })
-
 
 }
 
