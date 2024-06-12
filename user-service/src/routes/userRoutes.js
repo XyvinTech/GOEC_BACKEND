@@ -69,6 +69,7 @@ router
 router
   .put('/users/transaction/increaseSessions', authVerify, asyncHandler(userController.userUpdateSession))
   .get('/users/getChargingTariff/fromRfid/:rfId', authVerify, asyncHandler(userController.getChargingTariffByRfid))
+  .get('/users/getUserRegistationReport', authVerify, asyncHandler(userController.userRegReport))
 
 
 
