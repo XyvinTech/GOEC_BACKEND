@@ -14,6 +14,7 @@ router
 
   .get('/walletTransaction/dashboard/list', asyncHandler(walletTransactionController.dashboardTransactionList))
   .get('/walletTransaction/dashboard/report', asyncHandler(walletTransactionController.getReport))
+  .get('/walletTransaction/dashboard/account-transaction/report', asyncHandler(walletTransactionController.getAccountTransactionReport))
   .post('/walletTransaction/dashboardUser/list', asyncHandler(walletTransactionController.dashboardUserTransactionList))
 
 module.exports = router
