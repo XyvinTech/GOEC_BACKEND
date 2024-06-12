@@ -1016,3 +1016,43 @@ exports.dashboardUtilization = async (req, res)=>{
         res.status(400).json({ status: false, message: `Internal Server Error ${error.message}` })
     }
 }
+
+exports.getAlarmReport = async (req, res) => {
+
+    let { location, startDate, endDate, cpid } = req.query
+
+    let filters = {}
+    if (startDate && endDate) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+        let fromDate = moment(startDate, "YYYY-MM-DD").toDate()
+        let toDate = moment(endDate, "YYYY-MM-DD").toDate()
+        toDate.setDate(toDate.getDate() + 1)
+        filters.createdAt = { $gte: fromDate, $lt: toDate }
+      }
+      else return res.status(400).json({ status: false, message: 'Date should be in "YYYY-MM-DD" Format' })
+    }
+  
+    if (cpid) filters.CPID = cpid;
+
+    let result = await OCPPLOG.find(filters).sort({ createdAt: -1 })
+
+    result = result
+    .map(log => {
+      return {
+        date: moment(log.createdAt).format("DD/MM/YYYY HH:mm:ss"),
+        cpid: log.CPID,
+        connectorId: log.payload ? log.payload.connectorId : '',
+        status: log.payload ? log.payload.status : '',
+      };
+    })
+    .filter(log => log.status); 
+
+      const headers = [
+        { header: "Date", key: "date" },
+        { header: "CPID", key: "cpid" },
+        { header: "Connector Id", key: "connectorId" },
+        { header: "Status", key: "status" },
+      ]
+    
+      res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: result } })
+}
