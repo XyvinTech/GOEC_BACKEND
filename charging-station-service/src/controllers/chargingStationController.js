@@ -565,41 +565,48 @@ exports.deleteChargingStation = async (req, res) => {
 
 
 exports.inbetweenPointsList = async (req, res) => {
+  const { start, end } = req.body;
 
-  const { coordinates } = req.body;
-
-  if (!coordinates || !Array.isArray(coordinates) || coordinates.length === 0) {
-    throw new Error(400, "Invalid or missing coordinates");
+  // Check if start and end are provided in the request body
+  if (!start || !end) {
+    return res.status(400).json({ success: false, message: "Please provide both start and end coordinates." });
   }
 
-    // Validate all coordinate pairs
-    if (coordinates.some(coord => !Array.isArray(coord) || coord.length !== 2 || coord.some(num => typeof num !== 'number'))) {
-      return res.status(400).json({ error: "Each coordinate must be an array of two numbers." });
-    }
+  const polygon = createPolygon(start, end);
 
-  const convertedCoords = coordinates.map(coord => [coord[1], coord[0]]);
+  try {
+    const stations = await ChargingStation.find({
+      location: {
+        $geoWithin: {
+          $geometry: polygon
+        }
+      }
+    });
 
-   // Ensure the polygon is closed
-  if (convertedCoords[0][0] !== convertedCoords[convertedCoords.length - 1][0] ||
-    convertedCoords[0][1] !== convertedCoords[convertedCoords.length - 1][1]) {
-    convertedCoords.push([...convertedCoords[0]]); // Close the polygon
+    res.status(200).json({ success: true, count: stations.length, data: stations });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
   }
+}
 
-  const routePath = {
-    type: "Polygon",
-    coordinates: [convertedCoords]
+
+
+const createPolygon = (start, end) => {
+  // Assuming start and end are objects with 'longitude' and 'latitude' properties
+  const coordinates = [
+      [
+          [start.longitude, start.latitude],
+          [end.longitude, start.latitude],
+          [end.longitude, end.latitude],
+          [start.longitude, end.latitude],
+          [start.longitude, start.latitude] // Closing the polygon
+      ]
+  ];
+
+  const polygon = {
+      type: "Polygon",
+      coordinates: coordinates
   };
 
-  console.log("GeoJSON Object:", JSON.stringify(routePath));
-
-  const stations = await ChargingStation.find({
-    location: {
-      $geoWithin: {
-        $geometry: routePath
-      }
-    }
-  });
-
-  res.status(200).json({ success: true, count: stations.length, data: stations });
-
-}
+  return polygon;
+};
