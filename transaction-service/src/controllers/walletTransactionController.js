@@ -376,5 +376,65 @@ exports.getReport = async (req, res) => {
 
 }
 
+exports.getAccountTransactionReport = async (req, res) => {
+  let { startDate, endDate } = req.query
+  let filters = {}
+  if (startDate && endDate) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      let fromDate = moment(startDate, "YYYY-MM-DD").toDate()
+      let toDate = moment(endDate, "YYYY-MM-DD").toDate()
+      toDate.setDate(toDate.getDate() + 1)
+      filters.createdAt = { $gte: fromDate, $lt: toDate }
+    }
+    else return res.status(400).json({ status: false, message: 'Date should be in "YYYY-MM-DD" Format' })
+  }
+
+  let result = await WalletTransaction.aggregate([
+    { $match: filters },
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup:
+      {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "userDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$userDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+  ]);
+
+  if (!result.length) return res.status(400).json({ status: false, message: 'No Data Found' })
+
+  result = result.map(transaction => {
+
+    return {
+      date: moment(transaction.createdAt).format("DD/MM/YYYY HH:mm:ss"),
+      type: transaction.type,
+      currency: transaction.currency,
+      amount: transaction.amount,
+    }
+  })
+
+  const headers = [
+    { header: "Date", key: "date" },
+    { header: "Transaction Type", key: "type" },
+    { header: "Currency", key: "currency" },
+    { header: "Total Amount", key: "amount" },
+  ]
+
+  try {
 
 
+    res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: result } })
+  }
+  catch (error) {
+    res.status(400).json({ status: false, message: "Internal Server Error" })
+  }
+
+}

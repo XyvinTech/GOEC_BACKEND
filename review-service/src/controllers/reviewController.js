@@ -304,3 +304,41 @@ exports.filteredReviews = async (req, res) => {
 
   res.status(200).json({ status: true, message: 'Ok', result: result.transformedResult[0] ? result.transformedResult[0].reviews : [] })
 }
+
+
+exports.getFeedbackReport = async (req, res) => {
+  let { location, startDate, endDate } = req.query
+  let filters = {}
+  if (startDate && endDate) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      let fromDate = moment(startDate, "YYYY-MM-DD").toDate()
+      let toDate = moment(endDate, "YYYY-MM-DD").toDate()
+      toDate.setDate(toDate.getDate() + 1)
+      filters.createdAt = { $gte: fromDate, $lt: toDate }
+    }
+    else return res.status(400).json({ status: false, message: 'Date should be in "YYYY-MM-DD" Format' })
+  }
+
+  if (location) filters.chargingStation = new mongoose.Types.ObjectId(location);
+
+  let result = await Review.find(filters).sort({createdAt: -1})
+
+  result = result.map(review => {
+
+    return {
+      date: moment(review.createdAt).format("DD/MM/YYYY HH:mm:ss"),
+      feedbackType: "Charging Feedback",
+      rating: review.rating,
+      feedback: review.comment
+    }
+  })
+
+  const headers = [
+    { header: "Date", key: "date" },
+    { header: "Feedback Type", key: "feedbackType" },
+    { header: "Rating", key: "rating" },
+    { header: "Feedback", key: "feedback" },
+  ]
+
+  res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: result } })
+}

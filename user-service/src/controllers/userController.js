@@ -3,6 +3,7 @@ const USER = require('../models/userSchema')
 const axios = require('axios');
 const { getRFIDMongoId } = require('../services/rfid-service-api');
 const { getConfigValue } = require('../services/configuration-service-api');
+const moment = require('moment')
 
 // @ts-ignore
 // @ts-ignore
@@ -175,4 +176,42 @@ exports.userUpdateSession = async (req, res) => {
   } else {
     res.status(200).json({ status: true, message: 'Ok', result: updatedUser })
   }
+}
+
+exports.userRegReport = async (req, res) => {
+
+  let { startDate, endDate } = req.query
+
+  let filters = {}
+  if (startDate && endDate) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      let fromDate = moment(startDate, "YYYY-MM-DD").toDate()
+      let toDate = moment(endDate, "YYYY-MM-DD").toDate()
+      toDate.setDate(toDate.getDate() + 1)
+      filters.createdAt = { $gte: fromDate, $lt: toDate }
+    }
+    else return res.status(400).json({ status: false, message: 'Date should be in "YYYY-MM-DD" Format' })
+  }
+
+  let result = await USER.find(filters).sort({createdAt: -1})
+
+  result = result.map(user => {
+
+    return {
+      date: moment(user.createdAt).format("DD/MM/YYYY HH:mm:ss"),
+      idTag: user._id,
+      username: user.username,
+      mobile: user.mobile
+    }
+  })
+
+  const headers = [
+    { header: "Date", key: "date" },
+    { header: "IdTag", key: "idTag" },
+    { header: "User Name", key: "username" },
+    { header: "User Mobile Number", key: "mobile" },
+  ]
+
+  res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: result } })
+
 }

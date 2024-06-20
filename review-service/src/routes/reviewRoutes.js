@@ -13,6 +13,7 @@ router
   // .post('/review/byChargingStation/:chargingStation', asyncHandler(reviewController.getReviewByChargingStation))
   .post('/review/getReviews', asyncHandler(reviewController.getReviewByChargingStation))
   .get('/reviews/averageRating/:chargingStation/:evMachine', asyncHandler(reviewController.getAverageRating))
+  .get('/reviews/feedbackReport', asyncHandler(reviewController.getFeedbackReport))
 
   .get('/review/byChargingStation/:chargingStation', asyncHandler(reviewController.getReviewByChargingStation))
 

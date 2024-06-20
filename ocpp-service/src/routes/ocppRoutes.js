@@ -49,6 +49,7 @@ router
     .get('/ocpp/dashboard/transaction/report', asyncHandler(dashboardController.getReport))
     .get('/ocpp/dashboard/analytics/trends', asyncHandler(dashboardController.dashboardTrends))
     .get('/ocpp/dashboard/analytics/utilization', asyncHandler(dashboardController.dashboardUtilization))
+    .get('/ocpp/dashboard/alarmReport', asyncHandler(dashboardController.getAlarmReport))
 
 //!getSoc
 router
