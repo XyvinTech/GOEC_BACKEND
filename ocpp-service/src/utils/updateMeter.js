@@ -10,7 +10,7 @@ async function updateMeterAmount(transactionId, meterValue, actionType, currentS
   //get transaction details from db, which contains user, chargingTariff
   const transactionData = await OCPPTransaction.findOne({ transactionId })
   if (!transactionData) throw new Error(`Transaction with id ${transactionId} not found`)
-  const lastMeterValue = transactionData.lastMeterValue
+  const lastMeterValue = transactionData.meterStart // changed for correct calculation
   const { user, chargingTariff } = transactionData
 
   // if (meterValue < lastMeterValue) throw new Error(`Last meter value(${lastMeterValue}) greater than current meter value(${meterValue})`)
