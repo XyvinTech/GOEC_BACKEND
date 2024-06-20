@@ -43,7 +43,12 @@ async function handleAuthorization({ params, identity, res }) {
     }
 
     // Always save AuthorizationConfirmation log
-    await saveLogs(identity, "AuthorizationConfirmation", data, "CMS");
+    try {
+        console.log("Saving AuthorizationConfirmation log");
+        await saveLogs(identity, "AuthorizationConfirmation", data, "CMS");
+    } catch (error) {
+        console.log(`Error saving AuthorizationConfirmation log: ${error.message}`);
+    }
 
     return data;
 }
