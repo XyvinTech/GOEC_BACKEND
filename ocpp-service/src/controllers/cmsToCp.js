@@ -26,15 +26,6 @@ async function sendMessageToClient(evID, messageType, payLoad) {
       console.log(`${ocppCommand} rejected.`);
       throw new Error(`${ocppCommand} rejected.`);
     }
-  } else if (messageType === "Authorization") {
-    await saveLogs(evID, "AuthorizationConfirmation", response, "CMS");
-    if (response) {
-      console.log(`${ocppCommand} worked!`, response);
-      return response;
-    } else {
-      console.log(`${ocppCommand} rejected.`);
-      throw new Error(`${ocppCommand} rejected.`);
-    }
   } else {
     if (response.status === "Accepted") {
       console.log(`${ocppCommand} worked!`, response);
