@@ -846,7 +846,7 @@ exports.inbetweenPointsList = async (req, res) => {
   }
 }
 
-const createPolygon = (start, end, buffer = 0.009) => {
+const createPolygon = (start, end, buffer = 0.015) => {
   // Assuming start and end are objects with 'longitude' and 'latitude' properties
   // The buffer is a value to increase the size of the polygon
   const coordinates = [
