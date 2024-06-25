@@ -56,4 +56,6 @@ router.post("/evMachine/dashboardReport/report", asyncHandler(getReport))
 
 router.post("/evMachine/CPID", asyncHandler(evMachineController.getEvByLocation))
 
+// router.post("/evMachine/qrcode/machines", asyncHandler(evMachineController.updateAll))
+
 module.exports = router

@@ -3,17 +3,23 @@ const QRCode = require('qrcode');
 const Jimp = require('jimp');
 
 
-const createQRCode = async (payload, color = "#000000") => {
+const createQRCode = async (payload, stationName, color = "#000000") => {
     try {
         const text = JSON.stringify(payload);
         const qrImage = await QRCode.toDataURL(text);
         const qrCode = await Jimp.read(Buffer.from(qrImage.split(",")[1], 'base64'));
         const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
-        const image = new Jimp(qrCode.bitmap.width, qrCode.bitmap.height + 30, 'white');
+        const image = new Jimp(qrCode.bitmap.width, qrCode.bitmap.height + 50, 'white');
         
         image.composite(qrCode, 0, 0);
         image.print(font, 0, qrCode.bitmap.height, {
             text: `${payload.cpid}-${payload.connectorId}`,
+            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+            alignmentY: Jimp.VERTICAL_ALIGN_TOP
+        }, image.bitmap.width);
+
+        image.print(font, 0, qrCode.bitmap.height+20, {
+            text: `${stationName}`,
             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
             alignmentY: Jimp.VERTICAL_ALIGN_TOP
         }, image.bitmap.width);

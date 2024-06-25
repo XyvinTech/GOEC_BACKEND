@@ -54,9 +54,16 @@ exports.createEvMachine = async (req, res) => {
       // tariff: defaultTariff.data.result.value.toFixed(2)
     };
 
-
+  const chargingStationUrl = process.env.CHARGING_SERVICE_URL
+  if (!chargingStationUrl) return res.status(400).json({ status: false, error: 'CHARGING_SERVICE_URL not set in env' })
+    const station = await axios.get(`${chargingStationUrl}/api/v1/chargingStations/dashboard/${evMachineData.location_name}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    })
+    const stationName = station.data.result.name
     try {
-      qrCodeConnector = await createQRCode(stringData);
+      qrCodeConnector = await createQRCode(stringData, stationName);
 
     } catch (err) {
       console.error(err);
@@ -296,6 +303,65 @@ exports.getEvByLocation = async (req, res) => {
   }
 }
 
+// exports.updateAll = async (req, res) => {
+//   try {
+//     const findMachines = await EvMachine.find();
+//     if (findMachines.length > 0) {
+//       for (const evMachine of findMachines) {
+//         const evModel = await EvModel.findById(evMachine.evModel);
+//         if (!evModel) {
+//           continue; // Skip if EVModel not found
+//         }
+
+//         const numberOfConnectors = evModel.no_of_ports;
+
+//         let station;
+//         try {
+//           const chargingStationUrl = process.env.CHARGING_SERVICE_URL
+//            station = await axios.get(`${chargingStationUrl}/api/v1/chargingStations/dashboard/${evMachine.location_name}`, {
+//             headers: {
+//               Authorization: `Bearer ${token}`,
+//             }
+//           })
+//         } catch (err) {
+//           console.error(`Charging station not found for location: ${evMachine.location_name}`);
+//           continue; // Skip if charging station is not found
+//         }
+
+//         const stationName = station.data.result.name;
+
+//         for (let i = 0; i < numberOfConnectors; i++) {
+//           let stringData = {
+//             cpid: evMachine.CPID,
+//             connectorId: i + 1,
+//             chargerName: evMachine.CPID,
+//             outputType: evModel.output_type,
+//             capacity: evModel.capacity,
+//             connectorType: evModel.charger_type && evModel.charger_type[i] ? evModel.charger_type[i] : "",
+//           };
+
+//           let qrCodeConnector;
+//           try {
+//             qrCodeConnector = await createQRCode(stringData, stationName);
+//           } catch (err) {
+//             console.error(err);
+//             qrCodeConnector = evMachine.connectors[i].qrCode; // Retain existing qrCode if generation fails
+//           }
+
+//           evMachine.connectors[i].qrCode = qrCodeConnector;
+//         }
+
+//         await evMachine.save();
+//       }
+
+//       res.status(200).json({ status: true, message: 'All EV machines updated successfully' });
+//     } else {
+//       res.status(404).json({ status: false, message: 'No EV machines found' });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ status: false, error: error.message });
+//   }
+// };
 
 // const updateEvMachineQRCodes = async () => {
 

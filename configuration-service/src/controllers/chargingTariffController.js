@@ -126,13 +126,14 @@ const getChargingTariffListDropdown = async (req, res) => {
 // get chargingTariff by id
 const getChargingTariffById = async (req, res) => {
     const id = req.params.id
-
-    const chargingTariff = await ChargingTariff.findOne(id === 'default' ? { isDefault: true } : { _id: id })
+    let chargingTariff;
+    chargingTariff = await ChargingTariff.findById(id) 
     //    const chargingTariff = await ChargingTariff.findById(id)
 
    
     if (!chargingTariff) {
-        throw new createError(404, `ChargingTariff with id ${id} not found`)
+     chargingTariff = await ChargingTariff.findOne(id === 'default' ? { isDefault: true } : { _id: id })
+        // throw new createError(404, `ChargingTariff with id ${id} not found`)
     }
 
     let taxPercentage = await getTaxPercentage(chargingTariff.tax)
