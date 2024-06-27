@@ -2,6 +2,7 @@ const Tax = require('../models/taxShema');
 const mongoose = require('mongoose');
 const createError = require("http-errors")
 const taxValidationSchema = require('../validation/taxValidationSchema');
+const moment = require('moment-timezone');
 
 // create tax
 const createTax = async (req, res) => {
@@ -33,7 +34,13 @@ const getTaxList = async (req, res) => {
             { name: { $regex: searchQuery, $options: 'i' } }, 
         ];
     }
-    const taxs = await Tax.find(filter).skip(10*(pageNo-1)).limit(10);
+    let taxs = await Tax.find(filter).skip(10*(pageNo-1)).limit(10).lean();
+
+    taxs = taxs.map(doc => {
+        doc.createdAt = moment(doc.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A");
+        return doc;
+    });
+
     let totalCount = await Tax.find(filter).countDocuments()
     res.status(200).json({taxs, totalCount})
 }
