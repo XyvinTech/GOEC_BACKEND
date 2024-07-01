@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const createError = require("http-errors")
 const { chargingTariffValidationSchema, chargingTariffUpdateValidationSchema, chargingTariffDefaultValidationSchema, chargingTariffDefaultUpdateValidationSchema } = require('../validation/chargingTariffValidationSchema');
 const { getTaxPercentage } = require('./taxController')
+const moment = require('moment-timezone');
 
 // create chargingTariff
 const createChargingTariff = async (req, res) => {
@@ -79,7 +80,7 @@ const getChargingTariffList = async (req, res) => {
         ];
     }
    
-    const result = await ChargingTariff.aggregate([
+    let result = await ChargingTariff.aggregate([
         {
             $lookup: {
                 from: 'taxes', // The name of the referenced collection (case-sensitive)
@@ -93,6 +94,12 @@ const getChargingTariffList = async (req, res) => {
             $unwind: '$taxData',
         },
     ]).skip(10*(pageNo-1)).limit(10);
+
+    result = result.map(doc => {
+        doc.createdAt = moment(doc.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A");
+        doc.updatedAt = moment(doc.updatedAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A");
+        return doc;
+    });
 
     let totalCount = await ChargingTariff.find(filter).countDocuments()
 

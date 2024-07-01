@@ -8,8 +8,9 @@ exports.createRazorPaymentOrder = async (amount, currency) => {
   try {
     // initializing razorpay
     const instance = new Razorpay({
-      // key_id: process.env.RAZORPAY_ID_KEY,
-      // key_secret: process.env.RAZORPAY_SECRET_KEY,
+      key_id: process.env.RAZORPAY_ID_KEY,
+      key_secret: process.env.RAZORPAY_SECRET_KEY,
+      
       // key_id: process.env.RAZOR_TEST_ID,
       // key_secret: process.env.RAZOR_TEST_SECRET,
     })

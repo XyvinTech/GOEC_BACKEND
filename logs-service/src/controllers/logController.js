@@ -1,5 +1,6 @@
 const createError = require('http-errors')
 const LOGS = require('../models/logSchema')
+const moment = require('moment-timezone');
 const logSchema = require('../validation/logSchema')
 
 exports.getLogs = async (req, res) => {
@@ -11,9 +12,14 @@ exports.getLogs = async (req, res) => {
     filter.$or = [{ label: { $regex: searchQuery, $options: 'i' } }]
   }
   const totalCount = await LOGS.find(filter).countDocuments();
-  const logData = await LOGS.find(filter)
+  let logData = await LOGS.find(filter)
     .skip(10 * (pageNo - 1))
-    .limit(10).sort({ timestamp: -1 })
+    .limit(10).sort({ timestamps: -1 }).lean()
+
+    logData = logData.map(doc => {
+      doc.timestamp = moment(doc.timestamps).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A");
+      return doc;
+  });
   if (!logData) {
     res.status(404).json({ error: 'Log not found' })
   } else {

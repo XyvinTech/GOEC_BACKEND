@@ -52,7 +52,11 @@ exports.getAllOCPPLogs = async (req, res, next) => {
     }
     
 
-    let logData  = await OCPPLOG.find(filter).sort({ timestamp: -1 }).skip(10*(pageNo-1)).limit(10);
+    let logData  = await OCPPLOG.find(filter).sort({ timestamp: -1 }).skip(10*(pageNo-1)).limit(10).lean();
+    logData = logData.map(doc => {
+        doc.createdAt = moment(doc.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A");
+        return doc;
+    });
     let totalCount = await OCPPLOG.find(filter).countDocuments()
 
 
