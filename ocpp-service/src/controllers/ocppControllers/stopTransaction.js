@@ -12,12 +12,14 @@ async function handleStopTransaction({ params, identity }) {
 
   try {
     await saveLogs(identity, messageType, params);
+  
 
     await updateMeterAmount(transactionId, meterValue, "stopTransaction");
     await updateTransactionLog(params);
 
     const mobileClient = transactionId.toString();
     const mobileWs = await getMobileClient(mobileClient);
+    //while loop
 
     if (mobileWs) {
       let result = { type: 'Transaction Stopped' };

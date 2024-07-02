@@ -39,10 +39,14 @@ exports.remoteStopTransaction = async (req, res, next) => {
         await sendMessageToClient(evID, messageType, payload)
         const mobileWs = await getMobileClient(mobClient)
         if (mobileWs) {
-            mobileWs.send(JSON.stringify({ type: 'transactionStop' }));
-            mobileWs.close();
-            deleteMobileClient(mobClient)
-        } else {
+            
+            // Set a timer to wait before cutting the WebSocket connection
+            setTimeout(() => {
+                mobileWs.send(JSON.stringify({ type: 'transactionStop' }));
+
+                mobileWs.close();
+                deleteMobileClient(mobClient);
+            }, 6000);
         }
         //test
         res.status(200).json({ status: true, message: `${messageType} command set` })
