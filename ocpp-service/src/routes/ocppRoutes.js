@@ -36,6 +36,7 @@ router
     .get('/ocpp/dashboard/activeSession', asyncHandler(mobileApis.getActiveSessionDashboard))
     .post('/ocpp/chargingHistory/:userId', asyncHandler(mobileApis.getChargingHistory))
     .get('/ocpp/invoice/:transactionId', asyncHandler(mobileApis.getInvoice))
+    .get('/ocpp/sendmail/:transactionId', asyncHandler(mobileApis.sendMail))
 
 //* Dashboards apis
 router

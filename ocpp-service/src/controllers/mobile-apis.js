@@ -3,6 +3,7 @@ const moment = require('moment')
 const momentTimezone = require('moment-timezone');
 const mongoose = require('mongoose')
 const { generatePdf } = require('../utils/generatePdf');
+const { sendEmail } = require("../services/notification-service-api");
 
 //!ASHIN SSS
 exports.getActiveSession = async (req, res, next) => {
@@ -377,6 +378,63 @@ exports.getInvoice = async (req, res, next) => {
     }
 }
 
+exports.sendMail = async (req, res, next) => {
+    try {
+        const transactionId = Number(req.params.transactionId);
+        const result = await OCPPTransaction.aggregate([
+            { $match: { transactionId: transactionId } },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "user",
+                    foreignField: "_id",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                mobile: 1,
+                                email: 1,
+                            }
+                        }
+                    ],
+                    as: "userDetails",
+                }
+            }
+        ]);
+        let transactionData = result[0];
+
+        const invoiceResult = await exports.generateInvoice(transactionId);
+
+        if (invoiceResult.success) {
+            const fileName = `Invoice_${transactionId}.pdf`;
+            const data = {
+                email: transactionData.userDetails[0].email,
+                subject: 'Invoice Details of Transaction',
+                notificationHeading: 'Invoice',
+                notificationContent: 'Invoice Details of recent transaction',
+                attachments: [
+                    {
+                        filename: fileName,
+                        content: invoiceResult.result,
+                        encoding: 'base64',
+                    }
+                ]
+            };
+            const response = await sendEmail(data);
+            if(response){
+                res.status(200).json({ success: true, message: 'Email sent successfully' });
+            }else{
+                res.status(400).json({ success: false, message: 'Failed to send email' });
+            }
+        } else {
+            res.status(400).json({ success: false, message: invoiceResult.message });
+        }
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.getBalance = async (transactionId) => {
 
 
@@ -506,7 +564,139 @@ exports.getActiveSessionDashboard = async (req, res, next) => {
 
 }
 
+exports.generateInvoice = async (id) => {
+    try {
+        const transactionId = Number(id);
+        const result = await OCPPTransaction.aggregate([
+            { $match: { transactionId: transactionId } },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "user",
+                    foreignField: "_id",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                mobile: 1,
+                            }
+                        }
+                    ],
+                    as: "userDetails",
+                }
+            },
+            {
+                $lookup: {
+                    from: "evmachines",
+                    localField: "cpid",
+                    foreignField: "CPID",
+                    pipeline: [
+                        {
+                            $project: {
+                                location_name: 1,
+                                evModel: 1,
+                            }
+                        }
+                    ],
+                    as: "evMachineDetails",
+                }
+            },
+            {
+                $unwind: '$evMachineDetails'
+            },
+            {
+                $lookup: {
+                    from: 'chargingstations',
+                    localField: 'evMachineDetails.location_name',
+                    foreignField: '_id',
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                            }
+                        }
+                    ],
+                    as: 'chargingStation',
+                }
+            },
+            {
+                $lookup: {
+                    from: 'ev_models',
+                    localField: 'evMachineDetails.evModel',
+                    foreignField: '_id',
+                    pipeline: [
+                        {
+                            $project: {
+                                connectors: 1,
+                            }
+                        }
+                    ],
+                    as: 'connectorDetails',
+                }
+            },
+        ]);
 
+        let transactionData = result[0];
+        if (!transactionData) {
+            return {
+                success: false,
+                message: 'Transaction not found',
+            };
+        }
+        if (transactionData.transaction_status !== 'Completed') {
+            return {
+                success: false,
+                message: 'Transaction not completed',
+            };
+        }
+
+        let connectorFound = transactionData.connectorDetails[0].connectors.find(x => x.connectorId === transactionData.connectorId);
+        const energyConsumed = transactionData.meterStart && transactionData.lastMeterValue ? (transactionData.lastMeterValue - transactionData.meterStart) / 1000 : "";
+        const transaction = {
+            startTime: transactionData.startTime,
+            transactionId: transactionData.transactionId,
+            energyConsumed: `${energyConsumed} kWh`,
+            tariff: transactionData.chargingTariff,
+            duration: timeDifference(transactionData.endTime, transactionData.startTime),
+            totalAmount: transactionData.totalAmount.toFixed(2),
+            taxRate: transactionData.tax,
+            taxAmount: transactionData.totalAmount * transactionData.tax,
+            totalAmountInWords: numberToWords(transactionData.totalAmount.toFixed(2)).toUpperCase(),
+            paymentMethod: 'Wallet',
+            chargingStation: {
+                name: transactionData.chargingStation[0].name,
+                evMachineName: transactionData.cpid,
+                connectorType: connectorFound ? connectorFound.type : '',
+            },
+            user: {
+                name: transactionData.userDetails[0].username,
+                mobile: transactionData.userDetails[0].mobile,
+            }
+        };
+
+        return new Promise((resolve, reject) => {
+            generatePdf(transaction, (error, result) => {
+                if (!error) {
+                    resolve({
+                        success: true,
+                        result: result,
+                    });
+                } else {
+                    reject({
+                        success: false,
+                        message: 'Error generating pdf',
+                    });
+                }
+            });
+        });
+
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message,
+        };
+    }
+};
 
 function timeDifference(date1, date2) {
     // Calculate the difference in milliseconds

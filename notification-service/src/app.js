@@ -36,7 +36,7 @@ app.get('/api/health-check',((req, res) =>{
 
 //main API
 app.use(logger('dev'))
-app.use('/api/v1', authVerify, notificationRoute)
+app.use('/api/v1', notificationRoute)
 
 // 404 error
 app.all('*', (req, res, next) => {

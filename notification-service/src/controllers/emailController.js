@@ -10,7 +10,7 @@ const { sendEmail } = require('../utils/emailSender.js');
 // send notification
 exports.sendNotification = async (req, res) => {
 
-  const { email, subject, notificationHeading, notificationContent } = req.body;
+  const { email, subject, notificationHeading, notificationContent, attachments } = req.body;
   const htmlContent = `
     <div class="container" style="max-width: 90%; margin: auto; padding-top: 20px">
       <h2>${notificationHeading}</h2>
@@ -23,6 +23,7 @@ exports.sendNotification = async (req, res) => {
       to: email,
       subject: subject,
       html: htmlContent,
+      attachments: attachments
     });
     res.status(201).json({ message: "Email sent successfully" });
   } catch (error) {
