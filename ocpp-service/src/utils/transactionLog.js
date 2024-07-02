@@ -1,4 +1,5 @@
 
+const { sendMailWhileTransactionStop } = require('../controllers/mobile-apis');
 const OCPPTransaction = require('../models/ocppTransaction')
 const { updateWalletTransaction } = require('../services/transaction-service-api');
 const { addUserSessionUpdate } = require('../services/user-service-api');
@@ -56,6 +57,8 @@ let totalUnits = (params.meterStop - transactionData.meterStart) / 1000
      totalUnits: totalUnits,
     //  totalAmount:totalAmount
     };
+
+    await sendMailWhileTransactionStop(transactionId)
 
     let userupdateData = await OCPPTransaction.findByIdAndUpdate(transactionData._id, { $set: updatedTransaction }, { new: true });
     if (userupdateData) {

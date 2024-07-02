@@ -698,6 +698,58 @@ exports.generateInvoice = async (id) => {
     }
 };
 
+exports.sendMailWhileTransactionStop = async (id) => {
+    try {
+        const transactionId = Number(id);
+        const result = await OCPPTransaction.aggregate([
+            { $match: { transactionId: transactionId } },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "user",
+                    foreignField: "_id",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                mobile: 1,
+                                email: 1,
+                            }
+                        }
+                    ],
+                    as: "userDetails",
+                }
+            }
+        ]);
+        let transactionData = result[0];
+
+        const invoiceResult = await exports.generateInvoice(transactionId);
+
+        if (invoiceResult.success) {
+            const fileName = `Invoice_${transactionId}.pdf`;
+            const data = {
+                email: transactionData.userDetails[0].email,
+                subject: 'Invoice Details of Transaction',
+                notificationHeading: 'Invoice',
+                notificationContent: 'Invoice Details of recent transaction',
+                attachments: [
+                    {
+                        filename: fileName,
+                        content: invoiceResult.result,
+                        encoding: 'base64',
+                    }
+                ]
+            };
+            const response = await sendEmail(data);
+            if(response){
+                return;
+            }
+        } 
+    } catch (error) {
+        next(error);
+    }
+};
+
 function timeDifference(date1, date2) {
     // Calculate the difference in milliseconds
     const diff = date1 - date2;
