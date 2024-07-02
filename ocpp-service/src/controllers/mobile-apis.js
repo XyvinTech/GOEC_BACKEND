@@ -320,7 +320,7 @@ exports.getInvoice = async (req, res, next) => {
             },
             {
                 $lookup: {
-                    from: 'ev_models', // Collection name of ChargingStation model
+                    from: 'ev_models', // Collection name of ChargingStation model 
                     localField: 'evMachineDetails.evModel',
                     foreignField: '_id',
                     // as: 'chargingStation',
