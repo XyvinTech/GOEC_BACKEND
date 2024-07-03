@@ -51,7 +51,7 @@ exports.userList = async (req, res) => {
 
     {
       $lookup: {
-        from: 'chargingtariff', // Assuming the name of the RFID collection is 'rfidtags'
+        from: 'chargingtariffs', // Assuming the name of the RFID collection is 'rfidtags'
         localField: 'chargingTariff',
         foreignField: '_id',
         as: 'tariffValues'
