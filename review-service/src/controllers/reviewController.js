@@ -302,7 +302,18 @@ exports.filteredReviews = async (req, res) => {
 
   let result = transformResponse(aggregatedData)
 
-  res.status(200).json({ status: true, message: 'Ok', result: result.transformedResult[0] ? result.transformedResult[0].reviews : [] })
+  const finalRes = result.transformedResult.map(reviewGroup => {
+    return {
+      _id: reviewGroup.reviews[0]._id,
+      rating: reviewGroup.reviews[0].rating,
+      comment: reviewGroup.reviews[0].comment,
+      username: reviewGroup.reviews[0].username,
+      image: reviewGroup.reviews[0].image,
+      createdAt: reviewGroup.reviews[0].createdAt,
+    }
+  })
+
+  res.status(200).json({ status: true, message: 'Ok', result: finalRes ? finalRes : [] })
 }
 
 
