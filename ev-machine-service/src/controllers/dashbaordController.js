@@ -660,7 +660,7 @@ exports.getReport2 = async (req, res) => {
     result = result.map(transaction => {
         let chargingTariffRate = ""
         if (transaction) {
-            let totalAmount = Number(transaction.chargingTariffDetails.serviceAmount) + Number(transaction.chargingTariffDetails.value)
+            let totalAmount = Number(transaction.chargingTariffDetails?.serviceAmount) + Number(transaction.chargingTariffDetails?.value)
             chargingTariffRate += totalAmount + (totalAmount * (transaction.tax_percentage / 100))
         }
 
