@@ -274,7 +274,7 @@ exports.getDashboardListById = async (req, res) => {
                 published: 1,
                 connectors: 1,
                 cpidStatus: 1,
-                commissioned_date: 1,
+                createdAt: 1,
                 published: 1,
                 chargingStationDetails: 1,
 
