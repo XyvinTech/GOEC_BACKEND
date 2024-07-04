@@ -23,14 +23,14 @@ async function handleAuthorization({ params, identity, res }) {
         console.log(error);
     }
 
-    const expiryDate = new Date(Date.now() + 60 * 60 * 1000); // Adding 1 hour to the current time
+    // const expiryDate = new Date(Date.now() + 60 * 60 * 1000); // Adding 1 hour to the current time
     let data;
 
     if (isAuthorized) {
         data = {
             idTagInfo: {
                 status: "Accepted",
-                expiryDate: expiryDate.toISOString(),
+                // expiryDate: expiryDate.toISOString(),
             },
         };
     } else {
