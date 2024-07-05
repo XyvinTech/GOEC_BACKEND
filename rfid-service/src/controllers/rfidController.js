@@ -132,7 +132,7 @@ const getUnassignedRfids = async (req, res) => {
 
 // get rfid by id
 const getRfidBySerialNumber = async (req, res) => {
-    const serialNo = req.params.rfidSerialNumber
+    const serialNo = req.params.rfidSerialNumber.toUpperCase();
 
     if (!serialNo) {
         throw new createError(400, `serialNo is empty`)
