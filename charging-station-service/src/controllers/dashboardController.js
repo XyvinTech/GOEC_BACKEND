@@ -377,25 +377,49 @@ exports.getChargingStationEvMachineList = async (req, res) => {
 
 exports.getCPIDListByChargingStationForDashboard = async (req, res) => {
   let id = req.params.chargingStationId;
-  let list = await ChargingStation.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(id) } },
+  let pipeline = [];
 
+  if (id === 'all') {
+    pipeline = [
+      {
+        $lookup: {
+          from: 'evmachines',
+          localField: '_id',
+          foreignField: 'location_name',
+          as: 'evMachines'
+        }
+      },
+      { $unwind: { path: "$evMachines", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          evMachines: '$evMachines'
+        }
+      }
+    ];
+  } else {pipeline = [
+    { $match: { _id: new mongoose.Types.ObjectId(id) } },
     {
       $lookup: {
         from: 'evmachines',
         localField: '_id',
         foreignField: 'location_name',
-
         as: 'evMachines'
       }
     },
     { $unwind: { path: "$evMachines", preserveNullAndEmptyArrays: true } },
     {
       $project: {
-        evMachines: '$evMachines',
-
+        evMachines: '$evMachines'
       }
-    },
-  ]);
-  res.status(200).json({ status: true, message: 'OK', result: list })
+    }
+  ];
+  }
+
+  try {
+    let list = await ChargingStation.aggregate(pipeline);
+    res.status(200).json({ status: true, message: 'OK', result: list });
+  } catch (err) {
+    res.status(500).json({ status: false, message: 'Error fetching data', error: err });
+  }
 }
+

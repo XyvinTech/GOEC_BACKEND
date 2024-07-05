@@ -632,63 +632,61 @@ exports.dashboardAnalytics = async (req, res) => {
 }
 
 exports.getReport = async (req, res) => {
-    let { cpid, startDate, endDate } = req.query
-    let filters = { transaction_status: "Completed" }
-    if (cpid) filters.cpid = cpid
+    let { location, startDate, endDate } = req.query;
+    let filters = { transaction_status: "Completed" };
+
     if (startDate && endDate) {
         if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-            let fromDate = moment(startDate, "YYYY-MM-DD").toDate()
-            let toDate = moment(endDate, "YYYY-MM-DD").toDate()
-            toDate.setDate(toDate.getDate() + 1)
-            filters.startTime = { $gte: fromDate, $lt: toDate }
+            let fromDate = moment(startDate, "YYYY-MM-DD").toDate();
+            let toDate = moment(endDate, "YYYY-MM-DD").toDate();
+            toDate.setDate(toDate.getDate() + 1);
+            filters.startTime = { $gte: fromDate, $lt: toDate };
+        } else {
+            return res.status(400).json({ status: false, message: 'Date should be in "YYYY-MM-DD" Format' });
         }
-        else return res.status(400).json({ status: false, message: 'Date should be in "YYYY-MM-DD" Format' })
     }
 
-    const result = await OCPPTransaction.aggregate([
+    const aggregationPipeline = [
         { $match: filters },
         { $sort: { createdAt: -1 } },
+        {
+            $lookup: {
+                from: "evmachines",
+                localField: "cpid",
+                foreignField: "CPID",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "chargingstations",
+                            localField: "location_name",
+                            foreignField: "_id",
+                            as: "stationDetails",
+                        },
+                    },
+                    {
+                        $unwind: {
+                            path: "$stationDetails",
+                            preserveNullAndEmptyArrays: true,
+                        },
+                    }
+                ],
+                as: "evMachineDetails"
+            }
+        },
+        {
+            $match: location ? { "evMachineDetails.stationDetails._id": { $in: location.map(id => new ObjectId(id)) } } : {}
+        },
         {
             $lookup: {
                 from: "users",
                 localField: "user",
                 foreignField: "_id",
                 pipeline: [
-
-                    {
-                        $project: {
-                            username: 1,
-                            mobile: 1,
-                        }
-                    }
+                    { $project: { username: 1, mobile: 1 } }
                 ],
                 as: "userDetails",
             }
         },
-        {
-            $lookup: {
-                from: "evmachines", // the collection to join
-                localField: "cpid", // field in the OCPPTransaction collection
-                foreignField: "CPID",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "chargingstations",
-                            localField: "location_name", // field in the evMachineDetails document
-                            foreignField: "_id", // field in the chargingStation collection
-                            as: "stationDetails",
-                        },
-                    }, {
-                        $unwind: {
-                            path: "$stationDetails",
-                            preserveNullAndEmptyArrays: true,
-                        },
-                    },
-                ],
-                as: "evMachineDetails"
-            }
-        },
-
         {
             $project: {
                 meterStart: 1,
@@ -700,82 +698,31 @@ exports.getReport = async (req, res) => {
                 "transactionMode": "$transactionMode",
                 "closureReason": "$closureReason",
                 "transactionId": "$transactionId",
-                // "status": "$transaction_status",
                 "chargingStartTime": "$startTime",
                 "chargingStopTime": "$endTime",
                 "amount": { $toString: "$totalAmount" },
-                stationAddress: {
-                    $arrayElemAt: [
-                        "$evMachineDetails.stationDetails.address",
-                        0,
-                    ],
-                },
-                stationName: {
-                    $arrayElemAt: [
-                        "$evMachineDetails.stationDetails.name",
-                        0,
-                    ],
-                },
-                stationState: {
-                    $arrayElemAt: [
-                        "$evMachineDetails.stationDetails.state",
-                        0,
-                    ],
-                },
-                stationCity: {
-                    $arrayElemAt: [
-                        "$evMachineDetails.stationDetails.city",
-                        0,
-                    ],
-                },
-                chargerName: {
-                    $arrayElemAt: [
-                        "$evMachineDetails.name",
-                        0,
-                    ],
-                },
+                stationAddress: { $arrayElemAt: ["$evMachineDetails.stationDetails.address", 0] },
+                stationName: { $arrayElemAt: ["$evMachineDetails.stationDetails.name", 0] },
+                stationState: { $arrayElemAt: ["$evMachineDetails.stationDetails.state", 0] },
+                stationCity: { $arrayElemAt: ["$evMachineDetails.stationDetails.city", 0] },
+                chargerName: { $arrayElemAt: ["$evMachineDetails.name", 0] },
                 "tariff": "$chargingTariff",
-                "tax": {
-                    $toString: {
-                        $multiply: [
-                            { $toDouble: "$tax" },
-                            100
-                        ]
-                    }
-                },
-                "unitConsumed": {
-                    $divide: [
-                        { $subtract: ["$meterStop", "$meterStart"] },
-                        1000
-                    ]
-                }
+                "tax": { $toString: { $multiply: [{ $toDouble: "$tax" }, 100] } },
+                "unitConsumed": { $divide: [{ $subtract: ["$meterStop", "$meterStart"] }, 1000] }
             }
         }
-    ]);
+    ];
 
-    if (!result.length) return res.status(400).json({ status: false, message: 'No Data Found' })
+    const result = await OCPPTransaction.aggregate(aggregationPipeline);
 
-    // result = result.map(transactionData => {
-    //     return {
-    //         transactionId: transactionData.transactionId,
-    //         date: moment(transactionData.startTime).format("MMM DD YYYY h:mm:ss A"),
-    //         username: transactionData.username,
-    //         transactionMode: transactionData.transactionMode,
-    //         chargePointId: transactionData.cpid,
-    //         location: transactionData.chargingStation,
-    //         totalAmount: transactionData.totalAmount.toFixed(2),
-    //         closureReason: transactionData.closureReason || "",
-    //         duration: timeDifference(transactionData.endTime, transactionData.startTime),
-    //         unitConsumed: `${transactionData.unitConsumed ? transactionData.unitConsumed.toFixed(2) : ""} kWh`,
-    //         closeBy: transactionData.closeBy
-    //     }
-    // })
+    if (!result.length) {
+        return res.status(400).json({ status: false, message: 'No Data Found' });
+    }
 
     let formattedData = result.map(data => {
         const withoutTax = data.amount ? Number(data.amount) / (1 + (Number(data.tax) / 100)) : 0;
-
-        const taxAmount = data.tax ? Number(data.amount) - withoutTax : null
-        if (!data.tax) data.tax = null
+        const taxAmount = data.tax ? Number(data.amount) - withoutTax : null;
+        if (!data.tax) data.tax = null;
 
         return {
             ...data,
@@ -784,8 +731,8 @@ exports.getReport = async (req, res) => {
             chargingStartTime: data.chargingStartTime ? moment(data.chargingStartTime).format("DD-MM-YYYY hh:mm A") : "",
             chargingStopTime: data.chargingStopTime ? moment(data.chargingStopTime).format("DD-MM-YYYY hh:mm A") : "",
             transactionDate: data.chargingStopTime ? moment(data.chargingStopTime).format("DD-MM-YYYY hh:mm A") : "",
-        }
-    })
+        };
+    });
 
     const headers = [
         { header: "Transaction Id", key: "transactionId" },
@@ -799,7 +746,6 @@ exports.getReport = async (req, res) => {
         { header: "OCPP Start Time", key: "chargingStartTime" },
         { header: "OCPP Stop Time", key: "chargingStopTime" },
         { header: "Session Duration(hh:mm:ss)", key: "duration" },
-
         { header: "Meter Start", key: "meterStart" },
         { header: "Meter Stop", key: "meterStop" },
         { header: "Units Consumed(kWh)", key: "unitConsumed" },
@@ -809,18 +755,14 @@ exports.getReport = async (req, res) => {
         { header: "Total Amount", key: "amount" },
         { header: "Stop Reason", key: "closureReason" },
         { header: "Closed By", key: "closeBy" },
-    ]
+    ];
 
     try {
-
-
-        res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: formattedData } })
+        res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: formattedData } });
+    } catch (error) {
+        res.status(400).json({ status: false, message: "Internal Server Error" });
     }
-    catch (error) {
-        res.status(400).json({ status: false, message: "Internal Server Error" })
-    }
-
-}
+};
 
 
 exports.getSoc = async (req, res) => {
