@@ -774,13 +774,13 @@ exports.getSoc = async (req, res) => {
 }
 
 
-exports.dashboardTrends = async(req, res)=>{
+exports.dashboardTrends = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, location } = req.query;
 
-        let query = { transaction_status: "Completed" }
+        let query = { transaction_status: "Completed" };
         if (startDate && endDate) {
-            const dateFormat = 'DD-MM-YYYY';
+            const dateFormat = 'YYYY-MM-DD';
             const startMoment = moment(startDate, dateFormat);
             const endMoment = moment(endDate, dateFormat).endOf('day');
             query.startTime = {
@@ -788,134 +788,72 @@ exports.dashboardTrends = async(req, res)=>{
                 $lte: endMoment.toDate()
             };
         }
+        
+        let locationObjectIds = [];
+        if (location) {
+            locationObjectIds = location.map(id => new ObjectId(id));
+        }
 
-        const dailyRevenue = await OCPPTransaction.aggregate([
-            { $match: query },
+        const dailyRevenue = await getAggregateData(query, location, "$startTime", "$totalAmount");
+        const dailyTransactionCount = await getAggregateData(query, location, "$startTime", 1, -1);
+        const dailyEnergy = await getAggregateData(query, location, "$startTime", "$totalUnits");
+
+        // For the find query, adjust to check location
+        let findQuery = { transaction_status: "Completed", ...query };
+        const matchingTransactions = await OCPPTransaction.aggregate([
+            { $match: findQuery },
             {
-                $group: {
-                    _id: {
-                        year: { $year: "$startTime" },
-                        month: { $month: "$startTime" },
-                        day: { $dayOfMonth: "$startTime" },
-                    },
-                    totalRevenue: { $sum: "$totalAmount" },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: {
-                        $dateToString: {
-                            format: "%Y-%m-%d",
-                            date: {
-                                $dateFromParts: {
-                                    year: "$_id.year",
-                                    month: "$_id.month",
-                                    day: "$_id.day"
-                                }
-                            }
+                $lookup: {
+                    from: "evmachines",
+                    localField: "cpid",
+                    foreignField: "CPID",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "chargingstations",
+                                localField: "location_name",
+                                foreignField: "_id",
+                                as: "stationDetails",
+                            },
+                        },
+                        {
+                            $unwind: {
+                                path: "$stationDetails",
+                                preserveNullAndEmptyArrays: true,
+                            },
                         }
-                    },
-                    totalRevenue: 1,
-                },
+                    ],
+                    as: "evMachineDetails"
+                }
             },
-            { $sort: { date: 1 } },
+            {
+                $match: location ? { "evMachineDetails.stationDetails._id": { $in: locationObjectIds } } : {}
+            }
         ]);
-
-        const dailyTransactionCount = await OCPPTransaction.aggregate([
-            { $match: query },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: "$startTime" },
-                        month: { $month: "$startTime" },
-                        day: { $dayOfMonth: "$startTime" },
-                    },
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: {
-                        $dateToString: {
-                            format: "%Y-%m-%d",
-                            date: {
-                                $dateFromParts: {
-                                    year: "$_id.year",
-                                    month: "$_id.month",
-                                    day: "$_id.day"
-                                }
-                            }
-                        }
-                    },
-                    count: 1,
-                },
-            },
-            { $sort: { date: -1 } },
-        ]);
-
-        const dailyEnergy = await OCPPTransaction.aggregate([
-            { $match: query },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: "$startTime" },
-                        month: { $month: "$startTime" },
-                        day: { $dayOfMonth: "$startTime" },
-                    },
-                    totalEnergy: { $sum: "$totalUnits" },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: {
-                        $dateToString: {
-                            format: "%Y-%m-%d",
-                            date: {
-                                $dateFromParts: {
-                                    year: "$_id.year",
-                                    month: "$_id.month",
-                                    day: "$_id.day"
-                                }
-                            }
-                        }
-                    },
-                    totalEnergy: 1,
-                },
-            },
-            { $sort: { date: 1 } },
-        ]);
-
-        const matchingTransactions = await OCPPTransaction.find(query);
 
         let totalRevenue = 0;
-        matchingTransactions.forEach(transaction => {
-            totalRevenue += transaction.totalAmount;
-        });
-
         let totalUnit = 0;
         matchingTransactions.forEach(transaction => {
+            totalRevenue += transaction.totalAmount;
             totalUnit += transaction.totalUnits;
         });
 
         const totalCount = matchingTransactions.length;
 
-        res.status(200).json({ status: true, message: 'OK', revenue: dailyRevenue, chargingTransactions: dailyTransactionCount, energy:dailyEnergy, totalRevenue, totalCount, totalUnit })
+        res.status(200).json({ status: true, message: 'OK', revenue: dailyRevenue, chargingTransactions: dailyTransactionCount, energy: dailyEnergy, totalRevenue, totalCount, totalUnit });
 
     } catch (error) {
-        res.status(400).json({ status: false, message: `Internal Server Error ${error.message}` })
+        res.status(400).json({ status: false, message: `Internal Server Error ${error.message}` });
     }
 }
 
-exports.dashboardUtilization = async (req, res)=>{
+exports.dashboardUtilization = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, location } = req.query;
 
-        let query = { transaction_status: "Completed" }
+        let query = { transaction_status: "Completed" };
         if (startDate && endDate) {
-            const dateFormat = 'DD-MM-YYYY';
+            const dateFormat = 'YYYY-MM-DD';
             const startMoment = moment(startDate, dateFormat);
             const endMoment = moment(endDate, dateFormat).endOf('day');
             query.startTime = {
@@ -924,7 +862,7 @@ exports.dashboardUtilization = async (req, res)=>{
             };
         }
 
-        const aggregatedData = await OCPPTransaction.aggregate([
+        let pipeline = [
             { $match: query },
             {
                 $group: {
@@ -935,15 +873,47 @@ exports.dashboardUtilization = async (req, res)=>{
                     energy: { $sum: "$totalUnits" }
                 }
             },
-            { 
-                $sort: { "_id.month": 1 }
-            }
-        ]);
-        
-        const monthNames = moment.months(); 
-        
+            { $sort: { "_id.month": 1 } }
+        ];
+
+        if (location) {
+            const locationObjectIds = location.map(id => new ObjectId(id));
+            pipeline.unshift({
+                $lookup: {
+                    from: "evmachines",
+                    localField: "cpid",
+                    foreignField: "CPID",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "chargingstations",
+                                localField: "location_name",
+                                foreignField: "_id",
+                                as: "stationDetails",
+                            },
+                        },
+                        {
+                            $unwind: {
+                                path: "$stationDetails",
+                                preserveNullAndEmptyArrays: true,
+                            },
+                        },
+                        {
+                            $match: { "stationDetails._id": { $in: locationObjectIds } }
+                        }
+                    ],
+                    as: "evMachineDetails"
+                }
+            });
+            pipeline.push({ $match: { "evMachineDetails": { $ne: [] } } });
+        }
+
+        const aggregatedData = await OCPPTransaction.aggregate(pipeline);
+
+        const monthNames = moment.months();
+
         const datas = aggregatedData.map(item => {
-            const monthIndex = item._id.month - 1; 
+            const monthIndex = item._id.month - 1;
             const label = monthNames[monthIndex];
             return {
                 value1: item.totalRevenue.toFixed(2),
@@ -951,13 +921,13 @@ exports.dashboardUtilization = async (req, res)=>{
                 label: label
             };
         });
-        
+
         res.status(200).json({ status: true, message: 'OK', result: datas });
 
     } catch (error) {
-        res.status(400).json({ status: false, message: `Internal Server Error ${error.message}` })
+        res.status(400).json({ status: false, message: `Internal Server Error ${error.message}` });
     }
-}
+};
 
 exports.getAlarmReport = async (req, res) => {
 
@@ -997,4 +967,69 @@ exports.getAlarmReport = async (req, res) => {
       ]
     
       res.status(200).json({ status: true, message: 'OK', result: { headers: headers, body: result } })
+}
+
+async function getAggregateData(query, location, groupField, sumField, sortDirection = 1) {
+    return OCPPTransaction.aggregate([
+        { $match: query },
+        {
+            $lookup: {
+                from: "evmachines",
+                localField: "cpid",
+                foreignField: "CPID",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "chargingstations",
+                            localField: "location_name",
+                            foreignField: "_id",
+                            as: "stationDetails",
+                        },
+                    },
+                    {
+                        $unwind: {
+                            path: "$stationDetails",
+                            preserveNullAndEmptyArrays: true,
+                        },
+                    }
+                ],
+                as: "evMachineDetails"
+            }
+        },
+        {
+            $match: location ? { "evMachineDetails.stationDetails._id": { $in: location.map(id => new ObjectId(id)) } } : {}
+        },
+        {
+            $unwind: "$evMachineDetails"
+        },
+        {
+            $group: {
+                _id: {
+                    year: { $year: groupField },
+                    month: { $month: groupField },
+                    day: { $dayOfMonth: groupField },
+                },
+                total: { $sum: sumField },
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                date: {
+                    $dateToString: {
+                        format: "%Y-%m-%d",
+                        date: {
+                            $dateFromParts: {
+                                year: "$_id.year",
+                                month: "$_id.month",
+                                day: "$_id.day"
+                            }
+                        }
+                    }
+                },
+                total: 1,
+            },
+        },
+        { $sort: { date: sortDirection } },
+    ]);
 }
