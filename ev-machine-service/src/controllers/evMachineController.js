@@ -147,7 +147,7 @@ exports.getEvMachineList = async (req, res) => {
 // Update a evMachine by ID
 exports.updateEvMachine = async (req, res) => {
   try {
-    const token = req.headers.authorization.split(' ')[1]; // Extracting token from headers
+    const token = req.headers.authorization.split(' ')[1];
 
     // Find the existing machine and its model
     const existingEvMachine = await EvMachine.findById(req.params.evMachineId);
