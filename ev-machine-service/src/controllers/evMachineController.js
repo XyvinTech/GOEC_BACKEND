@@ -146,18 +146,87 @@ exports.getEvMachineList = async (req, res) => {
 
 // Update a evMachine by ID
 exports.updateEvMachine = async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1]; // Extracting token from headers
 
-  const updatedEvMachine = await EvMachine.findByIdAndUpdate(
-    req.params.evMachineId,
-    { $set: req.body },
-    { new: true }
-  )
-  if (!updatedEvMachine) {
-    res.status(404).json({ error: 'EvMachine not found' })
-  } else {
-    res.status(200).json(updatedEvMachine)
+    // Find the existing machine and its model
+    const existingEvMachine = await EvMachine.findById(req.params.evMachineId);
+    if (!existingEvMachine) {
+      return res.status(404).json({ error: 'EvMachine not found' });
+    }
+
+    const updatedData = req.body;
+
+    if (updatedData.CPID && updatedData.CPID !== existingEvMachine.CPID) {
+      const evModel = await EvModel.findById(existingEvMachine.evModel);
+      if (!evModel) throw new Error('EVModel not found');
+
+      const configurationServiceUrl = process.env.CONFIGURATION_SERVICE_URL;
+      if (!configurationServiceUrl) return res.status(400).json({ status: false, error: 'CONFIGURATION_SERVICE_URL not set in env' });
+
+      const defaultTariffResponse = await axios.get(`${configurationServiceUrl}/api/v1/chargingTariff/default`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const defaultTariff = defaultTariffResponse.data.result;
+      const numberOfConnectors = evModel.no_of_ports;
+      const connectors = [];
+
+      for (let i = 1; i <= numberOfConnectors; i++) {
+        let qrCodeConnector;
+        let stringData = {
+          cpid: updatedData.CPID,
+          connectorId: i,
+          chargerName: updatedData.CPID,
+          outputType: evModel.output_type,
+          capacity: evModel.capacity,
+          connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : ""
+        };
+
+        const chargingStationUrl = process.env.CHARGING_SERVICE_URL;
+        if (!chargingStationUrl) return res.status(400).json({ status: false, error: 'CHARGING_SERVICE_URL not set in env' });
+
+        const stationResponse = await axios.get(`${chargingStationUrl}/api/v1/chargingStations/dashboard/${existingEvMachine.location_name}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const stationName = stationResponse.data.result.name;
+
+        try {
+          qrCodeConnector = await createQRCode(stringData, stationName);
+        } catch (err) {
+          console.error(err);
+        }
+
+        connectors.push({
+          connectorId: i,
+          status: 'Unavailable',
+          errorCode: '',
+          qrCode: qrCodeConnector,
+          info: '',
+          timestamp: '',
+          vendorId: '',
+          vendorErrorCode: '',
+        });
+      }
+
+      updatedData.connectors = connectors;
+      updatedData.configuration_url = `wss://oxium.goecworld.com:5500/${updatedData.CPID}`;
+      updatedData.chargingTariff = defaultTariff._id;
+    }
+
+    const updatedEvMachine = await EvMachine.findByIdAndUpdate(
+      req.params.evMachineId,
+      { $set: updatedData },
+      { new: true }
+    );
+
+    res.status(200).json(updatedEvMachine);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
 
 // Delete a evMachine by ID
 exports.deleteEvMachine = async (req, res) => {
