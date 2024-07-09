@@ -49,29 +49,29 @@ exports.getOCPPTransaction = async (req, res) => {
                 localField: "user",
                 foreignField: "_id",
                 pipeline: [
-
                     {
                         $project: {
                             username: 1,
                             defaultVehicle: 1,
+                            vehicle: 1, // Include the vehicles array
                         }
                     }
                 ],
                 as: "userDetails",
             }
-        }, {
+        },
+        {
+            $unwind: {
+                path: "$userDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
             $lookup: {
                 from: "evmachines",
                 localField: "cpid",
                 foreignField: "CPID",
                 as: "evMachineDetails",
-            }
-        },
-
-        {
-            $unwind: {
-                path: "$userDetails",
-                preserveNullAndEmptyArrays: true
             }
         },
         {
@@ -88,14 +88,13 @@ exports.getOCPPTransaction = async (req, res) => {
                 as: "chargingStation",
             }
         },
-        { $match: filter },
-
         {
             $unwind: {
                 path: "$chargingStation",
                 preserveNullAndEmptyArrays: true
             }
         },
+        { $match: filter },
         {
             $addFields: {
                 unitConsumed: {
@@ -105,6 +104,32 @@ exports.getOCPPTransaction = async (req, res) => {
                         null
                     ]
                 },
+                vehicleDetails: {
+                    $arrayElemAt: [
+                        {
+                            $filter: {
+                                input: "$userDetails.vehicle",
+                                as: "vehicle",
+                                cond: { $eq: ["$$vehicle.evRegNumber", "$userDetails.defaultVehicle"] }
+                            }
+                        },
+                        0
+                    ]
+                }
+            }
+        },
+        {
+            $lookup: {
+                from: "vehicles",
+                localField: "vehicleDetails.vehicleRef",
+                foreignField: "_id",
+                as: "vehicleInfo"
+            }
+        },
+        {
+            $unwind: {
+                path: "$vehicleInfo",
+                preserveNullAndEmptyArrays: true
             }
         },
         {
@@ -128,12 +153,11 @@ exports.getOCPPTransaction = async (req, res) => {
                 totalAmount: 1,
                 closeBy: 1,
                 cpid: 1,
-                startTime: 1,
-                endTime: 1
+                vehicleInfo: 1 // Include the vehicle information
             }
         }
-
-    ]).skip(10*(pageNo-1)).limit(10);
+    ]).skip(10 * (pageNo - 1)).limit(10);
+    
 
     let totalCount = await OCPPTransaction.find(filter).countDocuments();
 
@@ -144,6 +168,7 @@ exports.getOCPPTransaction = async (req, res) => {
             date: moment(transactionData.startTime).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             username: transactionData.username,
             vehicleNum: transactionData.vehicleNumber,
+            vehicleInfo: transactionData.vehicleInfo,
             transactionMode: transactionData.transactionMode,
             chargePointId: transactionData.cpid,
             connectorId: transactionData.connectorId,
@@ -201,11 +226,12 @@ exports.getTransactionDetails = async (req, res, next) => {
                     localField: "user",
                     foreignField: "_id",
                     pipeline: [
-
                         {
                             $project: {
                                 username: 1,
                                 mobile: 1,
+                                defaultVehicle: 1,
+                                vehicle: 1, // Include the vehicles array
                             }
                         }
                     ],
@@ -218,7 +244,6 @@ exports.getTransactionDetails = async (req, res, next) => {
                     localField: "cpid",
                     foreignField: "CPID",
                     pipeline: [
-
                         {
                             $project: {
                                 location_name: 1,
@@ -228,17 +253,13 @@ exports.getTransactionDetails = async (req, res, next) => {
                     as: "evMachineDetails",
                 }
             },
-            {
-                $unwind: '$evMachineDetails'
-            },
+            { $unwind: '$evMachineDetails' },
             {
                 $lookup: {
-                    from: 'chargingstations', // Collection name of ChargingStation model
+                    from: 'chargingstations',
                     localField: 'evMachineDetails.location_name',
                     foreignField: '_id',
-                    // as: 'chargingStation',
                     pipeline: [
-
                         {
                             $project: {
                                 name: 1,
@@ -258,6 +279,30 @@ exports.getTransactionDetails = async (req, res, next) => {
                             null
                         ]
                     },
+                    vehicleDetails: {
+                        $arrayElemAt: [
+                            {
+                                $filter: {
+                                    input: { $arrayElemAt: ["$userDetails.vehicle", 0] },
+                                    as: "vehicle",
+                                    cond: { $eq: ["$$vehicle.evRegNumber", { $arrayElemAt: ["$userDetails.defaultVehicle", 0] }] }
+                                }
+                            }, 0
+                        ]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "vehicles",
+                    localField: "vehicleDetails.vehicleRef",
+                    foreignField: "_id",
+                    as: "vehicleInfo"
+                }
+            },
+            {
+                $addFields: {
+                    vehicleInfo: { $arrayElemAt: ["$vehicleInfo", 0] }
                 }
             },
             {
@@ -276,15 +321,25 @@ exports.getTransactionDetails = async (req, res, next) => {
                     totalAmount: 1,
                     cpid: 1,
                     closeBy: 1,
+                    meterStop: 1,
+                    startSoc: 1,
+                    currentSoc: 1,
+                    connectorId: 1,
+                    vehicleNumber: { $ifNull: [{ "$arrayElemAt": ["$userDetails.defaultVehicle", 0] }, ""] },
+                    vehicleDetails: 1,
+                    vehicleInfo: 1 // Add this to include vehicle info
                 }
             }
-        ]).skip(10*(pageNo-1)).limit(10);
+        ]).skip(10 * (pageNo - 1)).limit(10);
+        
+        
 
         let totalCount = await OCPPTransaction.find(filter).countDocuments()
 
 
         result = result.map(transactionData => {
             return {
+                id: transactionData._id,
                 transactionId: transactionData.transactionId,
                 date: moment(transactionData.startTime).format("MMM DD YYYY h:mm:ss A"),
                 username: transactionData.username,
@@ -295,7 +350,17 @@ exports.getTransactionDetails = async (req, res, next) => {
                 closureReason: transactionData.closureReason || "",
                 duration: timeDifference(transactionData.endTime, transactionData.startTime),
                 unitConsumed: `${transactionData.unitConsumed ? transactionData.unitConsumed.toFixed(2) : ""} kWh`,
-                closeBy: transactionData.closeBy
+                closeBy: transactionData.closeBy,
+                vehicleNum: transactionData.vehicleNumber,
+                vehilcleDetails: transactionData.vehicleDetails,
+                vehilcleInfo: transactionData.vehicleInfo,
+                connectorId: transactionData.connectorId,
+                meterStart: transactionData.meterStart,
+                meterStop: transactionData.meterStop,
+                startSoc: transactionData.startSoc,
+                currentSoc: transactionData.currentSoc,
+                startTime: moment(transactionData.startTime).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
+                endTime: moment(transactionData.endTime).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
             }
         })
 
