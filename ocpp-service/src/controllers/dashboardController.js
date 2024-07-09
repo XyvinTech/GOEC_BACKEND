@@ -16,7 +16,7 @@ exports.getOCPPTransaction = async (req, res) => {
     };
 
     if (startDate && endDate) {
-        const dateFormat = 'DD-MM-YYYY';
+        const dateFormat = 'YYYY-MM-DD';
         const startMoment = moment(startDate, dateFormat);
         const endMoment = moment(endDate, dateFormat).endOf('day');
         matchStage.$match.createdAt = {
@@ -27,20 +27,20 @@ exports.getOCPPTransaction = async (req, res) => {
 
     const filter = {};
 
-
     if (searchQuery) {
         filter.$or = [
             { 'chargingStation.name': { $regex: searchQuery, $options: 'i' } },
             { 'userDetails.username': { $regex: searchQuery, $options: 'i' } }
         ];
     }
-    
+
     if(locations){
         filter['chargingStation._id'] = { $in: locations };
     }
 
     if (cpid) matchStage.$match.cpid = cpid;
-    let pipeline = await OCPPTransaction.aggregate([
+
+    let pipeline = [
         matchStage,
         { $sort: { startTime: -1 } },
         {
@@ -156,12 +156,17 @@ exports.getOCPPTransaction = async (req, res) => {
                 vehicleInfo: 1 // Include the vehicle information
             }
         }
-    ]).skip(10 * (pageNo - 1)).limit(10);
-    
+    ];
 
-    let totalCount = await OCPPTransaction.find(filter).countDocuments();
+    let results = await OCPPTransaction.aggregate(pipeline)
+        .skip(10 * (pageNo - 1))
+        .limit(10);
 
-    let result = pipeline.map(transactionData => {
+    let countPipeline = [...pipeline, { $count: "total" }];
+    let countResult = await OCPPTransaction.aggregate(countPipeline);
+    let totalCount = countResult.length > 0 ? countResult[0].total : 0;
+
+    let result = results.map(transactionData => {
         return {
             id: transactionData._id,
             transactionId: transactionData.transactionId,
