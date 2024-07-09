@@ -484,6 +484,11 @@ exports.dashboardAnalytics = async (req, res) => {
             $facet: {
                 chargingSessionsCount: [
                     {
+                        $match: {
+                            transaction_status: "Completed"
+                        }
+                    },
+                    {
                         $count: "TotalChargingSessions"
                     }
                 ],
