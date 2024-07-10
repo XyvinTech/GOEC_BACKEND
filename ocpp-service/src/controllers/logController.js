@@ -27,7 +27,7 @@ exports.getAllOCPPLogs = async (req, res, next) => {
     const filter = {};
 
     if (startDate && endDate) {
-        const dateFormat = 'DD-MM-YYYY';
+        const dateFormat = 'YYYY-MM-DD';
         const startMoment = moment(startDate, dateFormat);
         const endMoment = moment(endDate, dateFormat).endOf('day');
         filter.createdAt = {
