@@ -377,35 +377,51 @@ exports.getTransactionDetails = async (req, res, next) => {
 }
 
 exports.getMachineLogs = async (req, res) => {
-
-    const { pageNo, searchQuery } = req.query;
-
+    const { pageNo, searchQuery, startDate, endDate } = req.query;
     const filter = { CPID: req.params.evMachine };
-
-
+    console.log("🚀 ~ exports.getMachineLogs= ~ pageNo:", pageNo)
+  
     if (searchQuery) {
-        filter.$or = [
-            { messageType: { $regex: searchQuery, $options: 'i' } }, 
-            { CPID: { $regex: searchQuery, $options: 'i' } }, 
-            { source: { $regex: searchQuery, $options: 'i' } }, 
-        ];
+      filter.$or = [
+        { messageType: { $regex: searchQuery, $options: 'i' } },
+        { CPID: { $regex: searchQuery, $options: 'i' } },
+        { source: { $regex: searchQuery, $options: 'i' } },
+      ];
     }
 
-    let data = await OCPPLOG.find(filter).sort({ timestamp: -1 }).skip(10*(pageNo-1)).limit(10);
-    data = data.map(log => {
-        return {
-            uniqueId: log._id,
-            connectorId: log.payload?.connectorId,
-            command: log.messageType,
-            date: moment(log.createdAt).tz("Asia/Kolkata").format("MMM DD YYYY h:mm:ss A"),
-            payload: log.payload,
-            source: log.source
-        }
-    })
-    let totalCount = await OCPPLOG.find(filter).countDocuments()
+    if (startDate && endDate) {
+        const dateFormat = 'YYYY-MM-DD';
+        const startMoment = moment(startDate, dateFormat);
+        const endMoment = moment(endDate, dateFormat).endOf('day');
+        filter.createdAt = {
+            $gte: startMoment.toDate(),
+            $lte: endMoment.toDate()
+        };
+    }
 
-    res.status(200).json({ status: true, message: 'OK', result: data, totalCount })
-}
+  
+    let data;
+    if (startDate && endDate && !pageNo) {
+      // Fetch all logs within the date range without pagination
+      data = await OCPPLOG.find(filter).sort({ timestamp: -1 });
+    } else {
+      // Fetch logs with pagination
+      data = await OCPPLOG.find(filter).sort({ timestamp: -1 }).skip(10 * (pageNo - 1)).limit(10);
+    }
+  
+    data = data.map(log => ({
+      uniqueId: log._id,
+      connectorId: log.payload?.connectorId,
+      command: log.messageType,
+      date: moment(log.createdAt).tz("Asia/Kolkata").format("YYYY-MM-DD h:mm:ss A"),
+      payload: log.payload,
+      source: log.source
+    }));
+  
+    const totalCount = await OCPPLOG.find(filter).countDocuments();
+  
+    res.status(200).json({ status: true, message: 'OK', result: data, totalCount });
+  };
 
 
 //Alarms
