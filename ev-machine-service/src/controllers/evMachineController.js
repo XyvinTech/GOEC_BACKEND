@@ -82,7 +82,6 @@ exports.createEvMachine = async (req, res) => {
   evMachineData.configuration_url = `wss://oxium.goecworld.com:5500/${evMachineData.CPID}`
   evMachineData.chargingTariff = defaultTariff.data.result._id;
 
-
   const evMachine = new EvMachine(evMachineData)
   const savedEvMachine = await evMachine.save()
   res.status(201).json(savedEvMachine)
