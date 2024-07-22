@@ -3,9 +3,9 @@ const QRCode = require('qrcode');
 const Jimp = require('jimp');
 
 
-const createQRCode = async (payload, stationName, color = "#000000") => {
+const createQRCode = async (payload, URL, stationName, color = "#000000") => {
     try {
-        const text = JSON.stringify(payload);
+        const text = JSON.stringify(URL);
         const qrImage = await QRCode.toDataURL(text);
         const qrCode = await Jimp.read(Buffer.from(qrImage.split(",")[1], 'base64'));
         const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);

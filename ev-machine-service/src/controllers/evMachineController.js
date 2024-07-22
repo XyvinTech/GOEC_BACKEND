@@ -45,6 +45,16 @@ exports.createEvMachine = async (req, res) => {
 
 
     let stringData = {
+      cpid: evMachineData.CPID,
+      connectorId: i,
+      chargerName: evMachineData.CPID,
+      outputType: evModel.output_type,
+      capacity: evModel.capacity,
+      connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : "",
+      // tariff: defaultTariff.data.result.value.toFixed(2)
+    };
+
+    let URL = {
       url: `https://oxium.goecworld.com:5691/api/v1/QRCode/${evModel._id}/${i}`,
     };
 
@@ -57,7 +67,7 @@ exports.createEvMachine = async (req, res) => {
     })
     const stationName = station.data.result.name
     try {
-      qrCodeConnector = await createQRCode(stringData, stationName);
+      qrCodeConnector = await createQRCode(stringData, URL, stationName);
 
     } catch (err) {
       console.error(err);
@@ -81,6 +91,7 @@ exports.createEvMachine = async (req, res) => {
   evMachineData.connectors = connectors;
   evMachineData.configuration_url = `wss://oxium.goecworld.com:5500/${evMachineData.CPID}`
   evMachineData.chargingTariff = defaultTariff.data.result._id;
+
 
   const evMachine = new EvMachine(evMachineData)
   const savedEvMachine = await evMachine.save()
@@ -175,6 +186,10 @@ exports.updateEvMachine = async (req, res) => {
           capacity: evModel.capacity,
           connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : ""
         };
+    
+        let URL = {
+          url: `https://oxium.goecworld.com:5691/api/v1/QRCode/${evModel._id}/${i}`,
+        };
 
         const chargingStationUrl = process.env.CHARGING_SERVICE_URL;
         if (!chargingStationUrl) return res.status(400).json({ status: false, error: 'CHARGING_SERVICE_URL not set in env' });
@@ -186,7 +201,7 @@ exports.updateEvMachine = async (req, res) => {
         const stationName = stationResponse.data.result.name;
 
         try {
-          qrCodeConnector = await createQRCode(stringData, stationName);
+          qrCodeConnector = await createQRCode(stringData, URL, stationName);
         } catch (err) {
           console.error(err);
         }
