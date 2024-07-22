@@ -36,8 +36,8 @@ app.get('/api/health-check',((req, res) =>{
 // testing dropdown
 //main APIs
 app.use(logger('dev'))
+app.get("/api/v1/QRCode/:id/:connectorId", evMachineController.getQRCode);
 app.use('/api/v1', authVerify, evMachineRoute)
-app.get("/QRCode/:id/:connectorId", evMachineController.getQRCode);
 
 // 404 
 app.all('*', (req, res, next) => {
