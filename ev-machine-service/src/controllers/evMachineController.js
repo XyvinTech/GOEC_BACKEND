@@ -45,13 +45,7 @@ exports.createEvMachine = async (req, res) => {
 
 
     let stringData = {
-      cpid: evMachineData.CPID,
-      connectorId: i,
-      chargerName: evMachineData.CPID,
-      outputType: evModel.output_type,
-      capacity: evModel.capacity,
-      connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : "",
-      // tariff: defaultTariff.data.result.value.toFixed(2)
+      url: `https://oxium.goecworld.com:5691/api/v1/QRCode/${evModel._id}/${i}`,
     };
 
   const chargingStationUrl = process.env.CHARGING_SERVICE_URL
@@ -370,6 +364,31 @@ exports.getEvByLocation = async (req, res) => {
   } else {
     res.status(200).json({ status: true, message: "No data found" })
   }
+}
+
+exports.getQRCode = async (req, res) => {
+  const id = req.params.id
+  const connectorId = req.params.connectorId
+  const machine = await EvMachine.findById(id);
+  const evModel = await EvModel.findById(machine.evModel);
+  if(!machine) {
+    throw new createError(404, `EvMachine with id ${id} not found`);
+  } else {
+    const connector = machine.connectors.map((connector) => connector.connectorId === connectorId);
+    if(!connector) {
+      throw new createError(404, `Connector with id ${connectorId} not found`);
+    } else {
+      const data = {
+        cpid: machine.CPID,
+        connectorId: Number(connectorId),
+        chargerName: machine.CPID,
+        outputType: evModel.output_type,
+        capacity: evModel.capacity,
+        connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : "",
+      }
+      res.status(200).json({ status: true, message: "OK", data: data });
+  }
+}
 }
 
 // exports.updateAll = async (req, res) => {
