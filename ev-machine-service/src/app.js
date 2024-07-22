@@ -8,6 +8,7 @@ const app = new express()
 const cookieParser = require('cookie-parser')
 const createError = require('http-errors')
 const authVerify = require('./middlewares/authVerify.js')
+const evMachineController = require('./controllers/evMachineController')
 
 
 app.use(cors(
@@ -36,6 +37,7 @@ app.get('/api/health-check',((req, res) =>{
 //main APIs
 app.use(logger('dev'))
 app.use('/api/v1', authVerify, evMachineRoute)
+app.get("/QRCode/:id/:connectorId", evMachineController.getQRCode);
 
 // 404 
 app.all('*', (req, res, next) => {
