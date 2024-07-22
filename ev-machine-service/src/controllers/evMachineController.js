@@ -16,65 +16,66 @@ exports.makeUpdates = async (req, res) => {
 
 // Create a new evMachine
 exports.createEvMachine = async (req, res) => {
-
   let evMachineData = req.body;
-  const findMachine = await EvMachine.findOne({ CPID: evMachineData.CPID })
-  if (findMachine) throw new createError(400, 'Duplicate CPID found')
+
+  const findMachine = await EvMachine.findOne({ CPID: evMachineData.CPID });
+  if (findMachine) throw new createError(400, 'Duplicate CPID found');
 
   // Find the EVModel by ID
   const evModel = await EvModel.findById(evMachineData.evModel);
   if (!evModel) {
     throw new Error('EVModel not found');
   }
-  const configurationServiceUrl = process.env.CONFIGURATION_SERVICE_URL
-  if (!configurationServiceUrl) return res.status(400).json({ status: false, error: 'CONFIGURATION_SERVICE_URL not set in env' })
+
+  const configurationServiceUrl = process.env.CONFIGURATION_SERVICE_URL;
+  if (!configurationServiceUrl) {
+    return res.status(400).json({ status: false, error: 'CONFIGURATION_SERVICE_URL not set in env' });
+  }
 
   const defaultTariff = await axios.get(`${configurationServiceUrl}/api/v1/chargingTariff/default`, {
     headers: {
       Authorization: `Bearer ${token}`,
     }
-  })
+  });
 
   const numberOfConnectors = evModel.no_of_ports;
   const connectors = [];
 
+  evMachineData.connectors = connectors;
+  evMachineData.configuration_url = `wss://oxium.goecworld.com:5500/${evMachineData.CPID}`;
+  evMachineData.chargingTariff = defaultTariff.data.result._id;
+
+  const evMachine = new EvMachine(evMachineData);
+  const savedEvMachine = await evMachine.save();
 
   for (let i = 1; i <= numberOfConnectors; i++) {
-
     let qrCodeConnector;
-
-
     let stringData = {
       cpid: evMachineData.CPID,
       connectorId: i,
-      chargerName: evMachineData.CPID,
-      outputType: evModel.output_type,
-      capacity: evModel.capacity,
-      connectorType: evModel.charger_type && evModel.charger_type[0] ? evModel.charger_type[0] : "",
-      // tariff: defaultTariff.data.result.value.toFixed(2)
     };
 
     let URL = {
-      url: `https://oxium.goecworld.com:5691/api/v1/QRCode/${evModel._id}/${i}`,
+      url: `https://oxium.goecworld.com:5691/api/v1/QRCode/${savedEvMachine._id}/${i}`,
     };
 
-  const chargingStationUrl = process.env.CHARGING_SERVICE_URL
-  if (!chargingStationUrl) return res.status(400).json({ status: false, error: 'CHARGING_SERVICE_URL not set in env' })
+    const chargingStationUrl = process.env.CHARGING_SERVICE_URL;
+    if (!chargingStationUrl) {
+      return res.status(400).json({ status: false, error: 'CHARGING_SERVICE_URL not set in env' });
+    }
+
     const station = await axios.get(`${chargingStationUrl}/api/v1/chargingStations/dashboard/${evMachineData.location_name}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       }
-    })
-    const stationName = station.data.result.name
+    });
+
+    const stationName = station.data.result.name;
     try {
       qrCodeConnector = await createQRCode(stringData, URL, stationName);
-
     } catch (err) {
       console.error(err);
     }
-
-
-
 
     connectors.push({
       connectorId: i,
@@ -88,15 +89,12 @@ exports.createEvMachine = async (req, res) => {
     });
   }
 
-  evMachineData.connectors = connectors;
-  evMachineData.configuration_url = `wss://oxium.goecworld.com:5500/${evMachineData.CPID}`
-  evMachineData.chargingTariff = defaultTariff.data.result._id;
+  savedEvMachine.connectors = connectors;
+  await savedEvMachine.save();
 
-
-  const evMachine = new EvMachine(evMachineData)
-  const savedEvMachine = await evMachine.save()
-  res.status(201).json(savedEvMachine)
+  res.status(201).json(savedEvMachine);
 }
+
 
 
 
@@ -407,27 +405,33 @@ exports.getQRCode = async (req, res) => {
 
 // exports.updateAll = async (req, res) => {
 //   try {
+//     const token = req.headers.authorization.split(' ')[1];
 //     const findMachines = await EvMachine.find();
 //     if (findMachines.length > 0) {
+//       const chargingStationUrl = process.env.CHARGING_SERVICE_URL;
+//       if (!chargingStationUrl) {
+//         return res.status(400).json({ status: false, error: 'CHARGING_SERVICE_URL not set in env' });
+//       }
+
 //       for (const evMachine of findMachines) {
 //         const evModel = await EvModel.findById(evMachine.evModel);
 //         if (!evModel) {
-//           continue; // Skip if EVModel not found
+//           console.error(`EVModel not found for machine ID: ${evMachine._id}`);
+//           continue;
 //         }
 
 //         const numberOfConnectors = evModel.no_of_ports;
 
 //         let station;
 //         try {
-//           const chargingStationUrl = process.env.CHARGING_SERVICE_URL
-//            station = await axios.get(`${chargingStationUrl}/api/v1/chargingStations/dashboard/${evMachine.location_name}`, {
+//           station = await axios.get(`${chargingStationUrl}/api/v1/chargingStations/dashboard/${evMachine.location_name}`, {
 //             headers: {
 //               Authorization: `Bearer ${token}`,
 //             }
-//           })
+//           });
 //         } catch (err) {
 //           console.error(`Charging station not found for location: ${evMachine.location_name}`);
-//           continue; // Skip if charging station is not found
+//           continue;
 //         }
 
 //         const stationName = station.data.result.name;
@@ -442,15 +446,28 @@ exports.getQRCode = async (req, res) => {
 //             connectorType: evModel.charger_type && evModel.charger_type[i] ? evModel.charger_type[i] : "",
 //           };
 
+//           let URL = {
+//             url: `https://oxium.goecworld.com:5691/api/v1/QRCode/${evMachine._id}/${i + 1}`,
+//           };
+
 //           let qrCodeConnector;
 //           try {
-//             qrCodeConnector = await createQRCode(stringData, stationName);
+//             qrCodeConnector = await createQRCode(stringData, URL, stationName);
 //           } catch (err) {
 //             console.error(err);
-//             qrCodeConnector = evMachine.connectors[i].qrCode; // Retain existing qrCode if generation fails
+//             qrCodeConnector = evMachine.connectors[i]?.qrCode || ''; // Retain existing qrCode if generation fails
 //           }
 
-//           evMachine.connectors[i].qrCode = qrCodeConnector;
+//           evMachine.connectors[i] = {
+//             connectorId: i + 1,
+//             status: evMachine.connectors[i]?.status || 'Unavailable',
+//             errorCode: evMachine.connectors[i]?.errorCode || '',
+//             qrCode: qrCodeConnector,
+//             info: evMachine.connectors[i]?.info || '',
+//             timestamp: evMachine.connectors[i]?.timestamp || '',
+//             vendorId: evMachine.connectors[i]?.vendorId || '',
+//             vendorErrorCode: evMachine.connectors[i]?.vendorErrorCode || '',
+//           };
 //         }
 
 //         await evMachine.save();
@@ -461,9 +478,13 @@ exports.getQRCode = async (req, res) => {
 //       res.status(404).json({ status: false, message: 'No EV machines found' });
 //     }
 //   } catch (error) {
+//     console.error(error);
 //     res.status(500).json({ status: false, error: error.message });
 //   }
 // };
+
+
+
 
 // const updateEvMachineQRCodes = async () => {
 
